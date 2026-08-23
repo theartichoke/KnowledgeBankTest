@@ -386,6 +386,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Knowledge Speedrun">
 <link rel="apple-touch-icon" href="icon-192.png">
+<style>
+.app-version{
+  display:inline-block;
+  margin-left:8px;
+  padding:2px 7px;
+  border:1px solid #555;
+  border-radius:999px;
+  font-size:.72em;
+  font-weight:normal;
+  opacity:.65;
+  vertical-align:middle;
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -761,6 +774,11 @@
       </details>
       <p id="sheetSyncStatus" class="muted small">Not configured.</p>
       <p id="sheetBridgeVersion" class="muted small">Bridge version: not checked yet.</p>
+<div id="pwaStatus" class="muted small" style="margin-top:6px;">
+  App v2026.08.23.4 • PWA: checking…
+  <button id="pwaInstallButton" type="button" hidden style="margin-left:8px;">Install App</button>
+</div>
+
       <p class="muted small"><strong>Important:</strong> Pull replaces the app's local question bank with the sheet after confirmation. The first Push is a full sync; later Pushes send only changed/new questions and deletions. Images are stored separately in small chunks. Your JSON/CSV backups remain separate.</p>
     </div>
   </div>
@@ -3756,13 +3774,47 @@ $("transitionTime").disabled=$("manualNext").checked;
 updateUI();
 </script>
 <script>
+let knowledgeSpeedrunInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  knowledgeSpeedrunInstallPrompt = event;
+  const button=document.getElementById("pwaInstallButton");
+  const status=document.getElementById("pwaStatus");
+  if(button){
+    button.hidden=false;
+    button.onclick=async()=>{
+      const prompt=knowledgeSpeedrunInstallPrompt;
+      if(!prompt)return;
+      prompt.prompt();
+      await prompt.userChoice;
+      knowledgeSpeedrunInstallPrompt=null;
+      button.hidden=true;
+    };
+  }
+  if(status)status.firstChild.textContent="App v2026.08.23.4 • PWA install available ";
+});
+
+window.addEventListener("appinstalled",()=>{
+  const button=document.getElementById("pwaInstallButton");
+  const status=document.getElementById("pwaStatus");
+  if(button)button.hidden=true;
+  if(status)status.firstChild.textContent="App v2026.08.23.4 • Installed as an app";
+});
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js", {scope:"./"})
       .then(reg => {
+        const status=document.getElementById("pwaStatus");
+        if(status && !knowledgeSpeedrunInstallPrompt && !window.matchMedia("(display-mode: standalone)").matches){
+          status.firstChild.textContent="App v2026.08.23.4 • PWA service worker active";
+        }
+
         if (reg.waiting) {
           window.dispatchEvent(new CustomEvent("knowledge-speedrun-update-ready"));
         }
+
         reg.addEventListener("updatefound", () => {
           const worker = reg.installing;
           if (!worker) return;
@@ -3773,7 +3825,11 @@ if ("serviceWorker" in navigator) {
           });
         });
       })
-      .catch(err => console.warn("Knowledge Speedrun offline cache unavailable:", err));
+      .catch(err => {
+        const status=document.getElementById("pwaStatus");
+        if(status)status.firstChild.textContent="App v2026.08.23.4 • PWA unavailable in this browser";
+        console.warn("Knowledge Speedrun offline cache unavailable:", err);
+      });
   });
 }
 </script>
