@@ -35,6 +35,155 @@
   .answer-result.correct { border:2px solid #3d9b5f; background:#12351e; }
   .answer-result.wrong { border:2px solid #b54a4a; background:#351515; }
   .mc-option { transition:background .12s,border-color .12s,transform .12s; border:2px solid #444; }
+  .mc-option.selected-choice { border-color:#6b8cff !important; background:#202b4d !important; box-shadow:0 0 0 2px rgba(107,140,255,.18); }
+  .quiz-card { position:relative; }
+  .quiz-top-actions { position:absolute; top:16px; right:16px; z-index:2; }
+  .quiz-top-actions button { font-size:.85rem; padding:6px 10px; }
+  .quiz-top-actions #exitTest {
+    border-color:#744040;
+    background:#281818;
+    color:#d9aaaa;
+  }
+  .quiz-top-actions #exitTest:hover {
+    background:#352020;
+    border-color:#8b5050;
+    color:#f0c0c0;
+  }
+  .results-actions {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:14px;
+  }
+  .results-primary-actions {
+    margin-top:0;
+  }
+  .results-history-button {
+    margin-left:auto;
+  }
+  .camera-modal {
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(0,0,0,.78);
+  }
+  .camera-dialog {
+    width:min(720px,100%);
+    background:#171717;
+    border:1px solid #444;
+    border-radius:10px;
+    padding:12px;
+    box-shadow:0 10px 40px rgba(0,0,0,.5);
+  }
+  .camera-dialog video {
+    display:block;
+    width:100%;
+    max-height:70vh;
+    object-fit:contain;
+    background:#000;
+    border-radius:6px;
+  }
+  .camera-actions {
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:10px;
+  }
+  .question-image-inputs {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .question-image-inputs input {
+    flex:1 1 240px;
+    min-width:0;
+  }
+  .question-image-inputs button {
+    flex:0 0 auto;
+  }
+  .question-image-preview {
+    margin-top:10px;
+    padding:10px;
+    border:1px solid #444;
+    border-radius:8px;
+    background:#171717;
+  }
+  .question-image-preview .image-preview-label {
+    margin:0 0 8px;
+    color:#bdbdbd;
+    font-size:.85rem;
+  }
+  .question-image-preview .image-preview-note {
+    margin:8px 0 0;
+    color:#999;
+    font-size:.78rem;
+  }
+  .question-image-gallery {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .question-image-tile {
+    position:relative;
+    width:180px;
+    max-width:100%;
+  }
+  .question-image-tile img {
+    display:block;
+    width:100%;
+    max-height:180px;
+    object-fit:contain;
+    border:1px solid #444;
+    border-radius:5px;
+    background:#111;
+  }
+  .question-image-remove {
+    position:absolute;
+    top:5px;
+    right:5px;
+    width:25px;
+    height:25px;
+    padding:0;
+    border-radius:50%;
+    border:1px solid #555;
+    background:#292929;
+    color:#eee;
+    font-weight:bold;
+    line-height:21px;
+    cursor:pointer;
+  }
+  .question-image-remove:hover {
+    background:#4a2525;
+  }
+  .selection-buttons {
+    display:flex;
+    gap:8px;
+    margin-top:6px;
+  }
+  .selection-buttons button {
+    font-size:.8rem;
+    padding:5px 9px;
+  }
+  .selection-status {
+    margin:6px 0 0;
+    font-size:.82rem;
+    color:#bdbdbd;
+    font-weight:600;
+  }
+  .selection-status strong {
+    color:#eee;
+  }
+  @media (max-width:600px) {
+    .results-actions { gap:8px; }
+    .results-primary-actions { flex:1; }
+    .results-history-button { flex:0 0 auto; }
+  }
   .mc-option.correct-choice { border-color:#3d9b5f !important; background:#12351e !important; }
   .mc-option.wrong-choice { border-color:#b54a4a !important; background:#351515 !important; }
   .mc-option.correct-choice, .mc-option.wrong-choice { font-weight:800; transform:scale(1.01); }
@@ -43,21 +192,39 @@
   .custom-tests-menu summary { cursor:pointer; padding:12px 14px; background:#202020; list-style-position:inside; }
   .custom-tests-menu summary:hover { background:#292929; }
   .custom-test-inner { padding:14px; }
-  .tab-groups { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
-  .tab-group { flex:1 1 320px; border:1px solid #333; border-radius:10px; padding:8px; background:#171717; }
+  .tab-groups { margin-bottom:18px; }
+  .tab-group { border:1px solid #333; border-radius:10px; padding:8px; background:#171717; }
+  .nav-sections { display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px; }
+  .nav-section { flex:1 1 320px; min-width:0; }
+  .nav-section-sync { flex:0 1 auto; }
   .tab-group-title { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:#999; padding:3px 8px 7px; }
   .tab-group-buttons { display:flex; flex-wrap:wrap; gap:6px; }
   .tab-group .tab { margin:0; }
-  .test-history-subtabs { flex-basis:100%; display:flex; flex-wrap:wrap; gap:6px; padding:2px 0 0 0; }
-  .test-history-subtabs.hidden { display:none; }
   .subtab { padding:7px 10px; border:1px solid #444; border-radius:7px; background:#151515; color:#ddd; cursor:pointer; font:inherit; font-size:.9rem; }
   .subtab:hover { background:#252525; }
-  .subtab.active { background:#333; border-color:#666; color:#fff; }
+  .subtab.active { background:#333; border-color:#666; color:#fff; }  .section-subnav {
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin:-1px 0 14px;
+    padding:8px;
+    border:1px solid #333;
+    border-radius:8px;
+    background:#171717;
+  }
+  .section-subnav .subtab.active { background:#333; border-color:#666; color:#fff; }
+
   .history-parent.active { background:#333; }
   .manual-selection-section { margin-top:22px; padding-top:18px; border-top:1px solid #333; }
   .manual-selection-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:10px; }
   .manual-selection-heading h3 { margin:0 0 4px; font-size:1.05rem; }
   .manual-selection-heading .custom-select-toggle { margin:2px 0 0; white-space:nowrap; }
+  .test-primary-settings { margin-bottom:20px; }
+  .test-primary-action { margin-top:14px; }
+  .test-primary-action button { font-size:1.05rem; padding:11px 18px; }
+  .test-extra-settings { margin-top:18px; padding-top:18px; border-top:1px solid #333; }
+  .test-extra-settings h3 { margin:0 0 12px; font-size:1rem; color:#ccc; }
+  .test-secondary-actions { margin-top:14px; }
   .test-actions { margin-top:18px; }
   .custom-select-toggle { display:flex; align-items:center; gap:8px; font-weight:600; margin:14px 0 8px; }
   .custom-question-picker { margin:8px 0 16px; border:1px solid #333; border-radius:9px; padding:10px; }
@@ -177,7 +344,39 @@
   .choice-row .choice-text { width:100%; box-sizing:border-box; }
   .choice-label { color:#aaa; font-size:.9rem; }
   img.preview { max-width:100%; max-height:260px; display:block; margin:12px 0; border-radius:8px; }
+  .answer-pool-summary { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  @media (max-width:600px) {
+    .wrap { padding:12px; }
+    .tabs { overflow-x:auto; flex-wrap:nowrap; padding-bottom:4px; }
+    .tabs .tab { flex:0 0 auto; }
+    .grid { grid-template-columns:1fr; }
+    .card { padding:13px; }
+    .question { font-size:1.45rem; line-height:1.25; }
+    .actions { flex-direction:column; }
+    .actions > button { width:100%; }
+    .manual-selection-heading { flex-direction:column; gap:8px; }
+    .manual-selection-heading .custom-select-toggle { width:100%; }
+    .custom-question-picker-head { flex-direction:column; align-items:stretch; }
+    .question-search { max-width:none; width:100%; }
+    .choice-row { grid-template-columns:28px minmax(0,1fr) 42px 54px !important; }
+    .choice-row .choice-text { min-width:0; }
+    #mcPoolCount,#mcDisplayCount { max-width:100%; }
+    .history-setting-tags { gap:4px; }
+    .history-setting-tag { font-size:.72rem; }
+    .run-count { width:100% !important; }
+  }
 </style>
+<style>
+.pool-editor-grid{align-items:start;}
+.pool-combine-box{font-size:.92rem;}
+.pool-combine-box details{border:1px solid #333;border-radius:8px;padding:10px;}
+.pool-combine-box summary{cursor:pointer;user-select:none;}
+.pool-combine-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto;margin:10px 0;}
+.pool-combine-list label{display:flex;align-items:center;gap:7px;font-weight:normal;margin:0;}
+.pool-combine-list input{width:auto;}
+@media (max-width:800px){.pool-editor-grid{grid-template-columns:1fr;}}
+</style>
+
 </head>
 <body>
 <div class="wrap">
@@ -186,24 +385,29 @@
 
 <div class="tab-groups">
   <div class="tab-group">
-    <div class="tab-group-title">Testing</div>
-    <div class="tab-group-buttons">
-      <button class="tab active" data-tab="test">New Test</button>
-      <button class="tab" data-tab="existing">Existing Tests</button>
-      <button class="tab history-parent" id="testHistoryTab" type="button">Test History ▾</button>
-      <div class="test-history-subtabs hidden" id="testHistorySubtabs">
-        <button class="subtab" data-tab="savedHistory">Saved Test History</button>
-        <button class="subtab" data-tab="randomHistory">Random History</button>
-        <button class="subtab" data-tab="settings">Test Saving Settings</button>
+    <div class="nav-sections">
+      <div class="nav-section">
+        <div class="tab-group-title">Testing</div>
+        <div class="tab-group-buttons">
+          <button class="tab active" data-tab="test">New Test</button>
+          <button class="tab" data-tab="existing">Existing Tests</button>
+          <button class="tab" id="testHistoryTab" type="button">Test History</button>
+        </div>
       </div>
-    </div>
-  </div>
-  <div class="tab-group">
-    <div class="tab-group-title">Question Data</div>
-    <div class="tab-group-buttons">
-      <button class="tab" data-tab="add">Add Question</button>
-      <button class="tab" data-tab="bank">Question Bank</button>
-      <button class="tab" data-tab="categories">Categories</button><button class="tab" data-tab="dataSync">Data Sync</button>
+
+      <div class="nav-section">
+        <div class="tab-group-title">Question Data</div>
+        <div class="tab-group-buttons">
+          <button class="tab" id="questionDataTab" type="button">Question Data</button>
+        </div>
+      </div>
+
+      <div class="nav-section nav-section-sync">
+        <div class="tab-group-title">Application Data</div>
+        <div class="tab-group-buttons">
+          <button class="tab" data-tab="dataSync">Data Sync</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -212,52 +416,91 @@
   <div id="setup" class="card">
     <h2 id="testSetupTitle">Start a test</h2>
     <div id="testEditBanner" class="test-edit-banner hidden"></div>
-    <label>Test name (optional for random tests)</label>
-    <input id="customTestName" placeholder="Name this test if you want to save it as an Existing Test">
+    <div class="test-primary-settings">
+      <div class="grid">
+        <div>
+          <label>Questions</label>
+          <input id="count" type="number" min="1" value="20">
+        </div>
+        <div>
+          <label>Categories</label>
+          <select id="testCategory" multiple size="4"></select>
+          <div class="selection-buttons">
+            <button type="button" id="selectAllCategories">Select All</button>
+            <button type="button" id="clearCategories">Clear Selection</button>
+          </div>
+          <p id="testCategorySelection" class="selection-status">Selected: <strong>None</strong></p>
+          <p class="muted small">Select none for all categories. Ctrl/Cmd-click to select multiple.</p>
+        </div>
+        <div>
+          <label>Subcategories</label>
+          <select id="testSubcategory" multiple size="4"></select>
+          <div class="selection-buttons">
+            <button type="button" id="selectAllSubcategories">Select All</button>
+            <button type="button" id="clearSubcategories">Clear Selection</button>
+          </div>
+          <p id="testSubcategorySelection" class="selection-status">Selected: <strong>None</strong></p>
+          <p class="muted small">Select none for all subcategories. Ctrl/Cmd-click to select multiple.</p>
+        </div>
+        <div>
+          <label>Difficulty</label>
+          <select id="testDifficulty">
+            <option value="super easy">Super Easy</option>
+            <option value="easy" selected>Easy</option>
+            <option value="normal">Normal</option>
+            <option value="hard">Hard</option>
+            <option value="extremely hard">Extremely Hard</option>
+          </select>
+          <p class="muted small">Higher settings increasingly favor harder questions instead of filtering out easier ones.</p>
+        </div>
+      </div>
 
-    <div class="grid">
-      <div><label>Questions</label><input id="count" type="number" min="1" value="20"></div>
-      <div><label>Time limit (minutes, 0 = none)</label><input id="limit" type="number" min="0" value="0"></div>
-      <div>
-        <label>Categories</label>
-        <select id="testCategory" multiple size="4"></select>
-        <p class="muted small">Select none for all categories. Ctrl/Cmd-click to select multiple.</p>
-      </div>
-      <div>
-        <label>Subcategories</label>
-        <select id="testSubcategory" multiple size="4"></select>
-        <p class="muted small">Select none for all subcategories. Ctrl/Cmd-click to select multiple.</p>
-      </div>
-      <div>
-        <label>Difficulty</label>
-        <select id="testDifficulty">
-          <option value="super easy">Super Easy</option>
-          <option value="easy" selected>Easy</option>
-          <option value="normal">Normal</option>
-          <option value="hard">Hard</option>
-          <option value="extremely hard">Extremely Hard</option>
-        </select>
-        <p class="muted small">Higher settings increasingly favor harder questions instead of filtering out easier ones.</p>
+      <div class="actions test-primary-action">
+        <button id="start">Start Random Test</button>
       </div>
     </div>
 
-    <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:12px;">
-      <input id="showCorrectOnWrong" type="checkbox" style="width:auto;">
-      Show the correct answer when I get a question wrong
-    </label>
-    <div class="grid" style="margin-top:12px;">
-      <div>
-        <label>Answer transition time (seconds)</label>
-        <input id="transitionTime" type="number" min="0" step="0.05" value="0.35">
+    <div class="test-extra-settings">
+      <h3>Additional Test Settings</h3>
+      <div class="grid">
+        <div>
+          <label>Time limit (minutes, 0 = none)</label>
+          <input id="limit" type="number" min="0" value="0">
+        </div>
+        <div>
+          <label>Answer transition time (seconds)</label>
+          <input id="transitionTime" type="number" min="0" step="0.05" value="0.5">
+        </div>
+        <div>
+          <label>Question timeout (minutes, 0 = none)</label>
+          <input id="questionTimeout" type="number" min="0" max="15" step="0.5" value="2">
+          <p class="muted small">Automatically stops the test if the current question is unanswered for this long. Maximum 15 minutes.</p>
+        </div>
+        <div>
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input id="manualNext" type="checkbox" style="width:auto;">
+            Require clicking an arrow to continue
+          </label>
+        </div>
       </div>
-      <div>
-        <label style="display:flex;align-items:center;gap:8px;">
-          <input id="manualNext" type="checkbox" style="width:auto;">
-          Require clicking an arrow to continue
-        </label>
+
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:12px;">
+        <input id="showCorrectOnWrong" type="checkbox" style="width:auto;">
+        Show the correct answer when I get a question wrong
+      </label>
+
+      <div style="margin-top:14px;">
+        <label>Save this test as an Existing Test</label>
+        <input id="customTestName" placeholder="Optional — give this test a name">
       </div>
+
+      <div class="actions test-secondary-actions">
+        <button id="saveCustomTest">Save as Existing Test</button>
+        <button id="cancelTestEdit" class="hidden">Cancel Edit</button>
+      </div>
+
+      <p class="muted small">Set transition time to 0 to move immediately. When manual mode is enabled, the time setting is disabled.</p>
     </div>
-    <p class="muted small">Set transition time to 0 to move immediately. When manual mode is enabled, the time setting is disabled.</p>
 
     <div class="manual-selection-section">
       <div class="manual-selection-heading">
@@ -284,18 +527,15 @@
       </div>
     </div>
 
-    <div class="actions test-actions">
-      <button id="start">Start Random Test</button>
-      <button id="saveCustomTest">Save as Existing Test</button>
-      <button id="cancelTestEdit" class="hidden">Cancel Edit</button>
-    </div>
-
-    <p class="muted small">Save reusable tests from the <strong>Existing Tests</strong> tab.</p>
+    <p class="muted small">Saved reusable tests can be run and edited from the <strong>Existing Tests</strong> tab.</p>
 
     <p id="empty" class="muted"></p>
   </div>
 
-  <div id="quiz" class="card hidden">
+  <div id="quiz" class="card hidden quiz-card">
+    <div class="quiz-top-actions">
+      <button id="exitTest" type="button">Exit Test</button>
+    </div>
     <div class="timer">Question <span id="qnum"></span> · Total time <span id="elapsed">0.00</span>s</div>
     <div id="question" class="question"></div>
     <img id="qimage" class="preview hidden">
@@ -311,6 +551,13 @@
 </section>
 
 <section id="add" class="panel">
+  <div class="section-subnav" aria-label="Question Data sections">
+    <button class="subtab" data-question-tab="add">Add Question</button>
+    <button class="subtab" data-question-tab="categories">Categories</button>
+    <button class="subtab" data-question-tab="answerPools">Answer Pools</button>
+    <button class="subtab" data-question-tab="bank">Question Bank</button>
+  </div>
+
   <div class="card">
     <h2>Add a question</h2>
     <label>Category</label>
@@ -344,12 +591,42 @@
     </div>
 
     <div id="mcEditor" class="hidden">
+      <label>Reusable answer pool <span class="muted small">(optional)</span></label>
+      <select id="answerPoolSelect">
+        <option value="">No reusable pool — enter choices manually</option>
+      </select>
+      <div class="actions" style="margin-top:8px;">
+        <button id="saveCurrentAnswerPool" type="button">Save Current Answers as Pool</button>
+        <button id="editSelectedAnswerPool" type="button" class="hidden">Edit Selected Pool</button>
+      </div>
+      <p class="muted small">A reusable pool supplies the possible answers for this question. The Correct checkbox still determines which answer(s) are correct.</p>
+      <p id="answerPoolEditWarning" class="muted small hidden">These answers came from the saved pool. Editing them here will not change the saved pool; it only changes this question's local answer list.</p>
+
       <label>Possible answers in pool</label>
       <input id="mcPoolCount" type="number" min="2" max="25" value="4">
       <p class="muted small">Up to 25 possible answers. Pool is automatically checked for every new choice.</p>
       <label>Answers actually displayed</label>
       <input id="mcDisplayCount" type="number" min="2" max="25" value="4">
-      <p class="muted small">This is separate from the pool size. For example, you can have 25 possible answers but only show 4 at a time. The correct answer is always included.</p>
+      <p class="muted small">This is separate from the pool size. For example, you can have 25 possible answers but only show 4 at a time. The correct answer(s) are always included.</p>
+
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
+        <input id="multipleCorrect" type="checkbox" style="width:auto;">
+        Allow multiple correct answers
+      </label>
+      <div id="multipleCorrectSettings" class="hidden" style="margin:8px 0 12px 24px;">
+        <div class="grid" style="max-width:520px;">
+          <div>
+            <label>Minimum correct answers required</label>
+            <input id="minCorrectAnswers" type="number" min="1" max="25" value="1">
+          </div>
+          <div>
+            <label>Maximum correct answers allowed</label>
+            <input id="maxCorrectAnswers" type="number" min="1" max="25" value="1">
+          </div>
+        </div>
+        <p class="muted small">Each question randomly chooses a number of correct answers between these values. The number shown is still controlled separately by “Answers actually displayed.”</p>
+      </div>
+      <p class="muted small">When enabled, the test taker must select the randomly chosen number of correct answers. Selecting an incorrect answer makes the question incorrect.</p>
 
       <div class="actions">
         <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
@@ -370,14 +647,70 @@
       <div id="choiceEditor"></div>
     </div>
 
-    <label>Optional image</label>
-    <input id="img" type="file" accept="image/*">
+    <label>Question images</label>
+    <div class="question-image-inputs">
+      <input id="img" type="file" accept="image/*" multiple>
+      <button type="button" id="takePhoto">Take Photo</button>
+    </div>
+    <p class="muted small">On mobile, Take Photo opens the camera. On desktop it uses your camera if the browser supports it; otherwise the normal file picker remains available.</p>
+    <div id="questionImagePreview" class="question-image-preview hidden"></div>
     <div class="actions"><button id="save">Save Question</button><button id="clearForm">Clear</button></div>
     <p id="saveMsg"></p>
   </div>
 </section>
 
+<section id="answerPools" class="panel">
+  <div class="section-subnav" aria-label="Question Data sections">
+    <button class="subtab" data-question-tab="add">Add Question</button>
+    <button class="subtab" data-question-tab="categories">Categories</button>
+    <button class="subtab" data-question-tab="answerPools">Answer Pools</button>
+    <button class="subtab" data-question-tab="bank">Question Bank</button>
+  </div>
+
+  <div class="card">
+    <h2>Answer Pools</h2>
+    <p class="muted small">Create reusable lists of possible answers. Multiple questions can reference the same pool, so you only have to enter a list once. If you edit a pool later, questions that reference it will use the updated list.</p>
+
+    <div class="grid pool-editor-grid">
+      <div>
+        <label>Pool name</label>
+        <input id="poolName" placeholder="e.g. Saturn's Moons">
+      </div>
+      <div>
+        <label>Answers</label>
+        <textarea id="poolAnswers" placeholder="Titan&#10;Rhea&#10;Enceladus&#10;Iapetus"></textarea>
+      </div>
+      <div class="pool-combine-box">
+        <details>
+          <summary><strong>Build from other pools</strong></summary>
+          <p class="muted small">Select existing pools to combine into this one. Answers are deduplicated automatically.</p>
+          <div id="poolCombineList" class="pool-combine-list"></div>
+          <button type="button" id="fillPoolFromSelected">Fill answers from selected pools</button>
+          <p id="poolCombineMsg" class="muted small"></p>
+        </details>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="saveAnswerPool">Save Answer Pool</button>
+      <button id="clearAnswerPool">Clear</button>
+    </div>
+    <p id="answerPoolMsg" class="muted small"></p>
+  </div>
+
+  <div class="card">
+    <h3>Saved Answer Pools</h3>
+    <div id="answerPoolList"></div>
+  </div>
+</section>
+
 <section id="categories" class="panel">
+  <div class="section-subnav" aria-label="Question Data sections">
+    <button class="subtab" data-question-tab="add">Add Question</button>
+    <button class="subtab" data-question-tab="categories">Categories</button>
+    <button class="subtab" data-question-tab="answerPools">Answer Pools</button>
+    <button class="subtab" data-question-tab="bank">Question Bank</button>
+  </div>
+
   <div class="card">
     <h2>Categories</h2>
     <p class="muted small">Create the categories that you want available when adding questions. Categories with questions in them cannot be deleted unless you first move or delete those questions.</p>
@@ -465,6 +798,12 @@
 </section>
 
 <section id="randomHistory" class="panel">
+  <div class="section-subnav" aria-label="Test History sections">
+    <button class="subtab" data-history-tab="savedHistory">Saved Test History</button>
+    <button class="subtab" data-history-tab="randomHistory">Random History</button>
+    <button class="subtab" data-history-tab="settings">Test Saving Settings</button>
+  </div>
+
   <div class="card">
     <h2>Random Test History</h2>
     <p class="muted small">Random tests are temporary. The oldest random runs are automatically removed when the limit is reached.</p>
@@ -477,6 +816,12 @@
 </section>
 
 <section id="savedHistory" class="panel">
+  <div class="section-subnav" aria-label="Test History sections">
+    <button class="subtab" data-history-tab="savedHistory">Saved Test History</button>
+    <button class="subtab" data-history-tab="randomHistory">Random History</button>
+    <button class="subtab" data-history-tab="settings">Test Saving Settings</button>
+  </div>
+
   <div class="card">
     <h2>Saved Test History</h2>
     <p class="muted small">Runs of saved Existing Tests are kept indefinitely until you delete them.</p>
@@ -489,6 +834,12 @@
 </section>
 
 <section id="settings" class="panel">
+  <div class="section-subnav" aria-label="Test History sections">
+    <button class="subtab" data-history-tab="savedHistory">Saved Test History</button>
+    <button class="subtab" data-history-tab="randomHistory">Random History</button>
+    <button class="subtab" data-history-tab="settings">Test Saving Settings</button>
+  </div>
+
   <div class="card">
     <h2>Test Settings</h2>
     <p class="muted small">Saved Test History is permanent. This setting only controls how many random-test results are retained.</p>
@@ -501,6 +852,13 @@
 </section>
 
 <section id="bank" class="panel">
+  <div class="section-subnav" aria-label="Question Data sections">
+    <button class="subtab" data-question-tab="add">Add Question</button>
+    <button class="subtab" data-question-tab="categories">Categories</button>
+    <button class="subtab" data-question-tab="answerPools">Answer Pools</button>
+    <button class="subtab" data-question-tab="bank">Question Bank</button>
+  </div>
+
   <div class="card">
     <h2>Question Bank</h2>
     <div class="actions">
@@ -521,9 +879,14 @@
 <script>
 const KEY="knowledge-speedrun-v1";
 let bank=JSON.parse(localStorage.getItem(KEY)||"[]");
+const ANSWER_POOL_KEY="knowledge-speedrun-answer-pools-v1";
+let answerPools=JSON.parse(localStorage.getItem(ANSWER_POOL_KEY)||"[]");
+answerPools=Array.isArray(answerPools)?answerPools:[];
+let editingAnswerPoolId=null;
 let test=[], idx=0, correct=0, started=0, qStarted=0, answers=[];
 let showCorrectOnWrong=false;
-let transitionTime=0.35;
+let transitionTime=0.5;
+let questionTimeout=2;
 let editingCustomTestId=null;
 let currentRunNoSave=false;
 let customQuestionMode=false;
@@ -544,6 +907,107 @@ let customTests=JSON.parse(localStorage.getItem(CUSTOM_TEST_KEY)||"[]");
 const $=id=>document.getElementById(id);
 function saveBank(){localStorage.setItem(KEY,JSON.stringify(bank)); updateUI();}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+function saveAnswerPools(){
+  localStorage.setItem(ANSWER_POOL_KEY,JSON.stringify(answerPools));
+  renderAnswerPoolList();
+  refreshAnswerPoolSelect();
+  renderPoolCombineList();
+}
+function getAnswerPoolById(id){
+  return answerPools.find(p=>p.id===id)||null;
+}
+function cleanPoolAnswers(text){
+  return [...new Set(String(text||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean))].slice(0,25);
+}
+function refreshAnswerPoolSelect(selectedId=null){
+  const select=$("answerPoolSelect");
+  if(!select)return;
+  const current=selectedId!==null ? selectedId : select.value;
+  select.innerHTML='<option value="">No reusable pool — enter choices manually</option>'+
+    answerPools.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${p.answers.length})</option>`).join("");
+  select.value=getAnswerPoolById(current)?current:"";
+  $("editSelectedAnswerPool")?.classList.toggle("hidden",!select.value);
+}
+function renderAnswerPoolList(){
+  const box=$("answerPoolList");
+  if(!box)return;
+  if(!answerPools.length){
+    box.innerHTML='<p class="muted">No answer pools have been created yet.</p>';
+    return;
+  }
+  box.innerHTML=answerPools.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>{
+    const used=bank.filter(q=>q.answerPoolId===p.id).length;
+    return `<details class="history-category">
+      <summary><strong>${esc(p.name)}</strong> <span class="muted small">(${p.answers.length} answers${used?`, ${used} questions`:''})</span></summary>
+      <div class="card" style="margin:0;border:0;border-top:1px solid #333;border-radius:0;">
+        <p class="muted small">${esc(p.answers.join(" • "))}</p>
+        <div class="actions">
+          <button type="button" onclick="editAnswerPoolById('${p.id}')">Edit</button>
+          <button type="button" onclick="deleteAnswerPoolById('${p.id}')">Delete</button>
+        </div>
+      </div>
+    </details>`;
+  }).join("");
+}
+function renderPoolCombineList(){
+  const box=$("poolCombineList");
+  if(!box)return;
+  const currentId=editingAnswerPoolId;
+  const pools=answerPools
+    .filter(p=>p.id!==currentId)
+    .slice()
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  if(!pools.length){
+    box.innerHTML='<span class="muted small">Create another answer pool first, then it will appear here.</span>';
+    return;
+  }
+  box.innerHTML=pools.map(p=>`<label><input type="checkbox" class="pool-combine-choice" value="${esc(p.id)}"> <span>${esc(p.name)} <span class="muted small">(${p.answers.length})</span></span></label>`).join("");
+}
+function fillPoolFromSelected(){
+  const ids=[...document.querySelectorAll(".pool-combine-choice:checked")].map(x=>x.value);
+  if(!ids.length){$("poolCombineMsg").textContent="Select at least one existing pool.";return;}
+  const selected=ids.map(id=>getAnswerPoolById(id)).filter(Boolean);
+  const combined=[...new Set(selected.flatMap(p=>p.answers))].slice(0,25);
+  const existing=cleanPoolAnswers($("poolAnswers").value);
+  if(existing.length){
+    const ok=confirm("This will replace the answers currently in the editor with the selected pools. Continue?");
+    if(!ok)return;
+  }
+  $("poolAnswers").value=combined.join("\n");
+  $("poolCombineMsg").textContent=combined.length<selected.reduce((n,p)=>n+p.answers.length,0)
+    ? `Filled with ${combined.length} unique answers. The 25-answer limit truncated the combined list.`
+    : `Filled with ${combined.length} unique answers.`;
+}
+$("fillPoolFromSelected").onclick=fillPoolFromSelected;
+
+function editAnswerPoolById(id){
+  const p=getAnswerPoolById(id);
+  if(!p)return;
+  editingAnswerPoolId=id;
+  $("poolName").value=p.name;
+  $("poolAnswers").value=p.answers.join("\n");
+  document.querySelector('[data-tab="answerPools"]').click();
+  $("answerPoolMsg").textContent="Editing this answer pool. Saving will update every question that references it.";
+  renderPoolCombineList();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+window.editAnswerPoolById=editAnswerPoolById;
+function deleteAnswerPoolById(id){
+  const p=getAnswerPoolById(id);
+  if(!p)return;
+  const used=bank.filter(q=>q.answerPoolId===id).length;
+  const message=used
+    ? `Delete "${p.name}"? ${used} question${used===1?"":"s"} currently reference this pool. Those questions will keep their saved answer choices but will no longer update from this pool.`
+    : `Delete "${p.name}"?`;
+  if(!confirm(message))return;
+  answerPools=answerPools.filter(x=>x.id!==id);
+  bank=bank.map(q=>q.answerPoolId===id?{...q,answerPoolId:null}:q);
+  localStorage.setItem(KEY,JSON.stringify(bank));
+  saveAnswerPools();
+  if($("answerPoolSelect")?.value===id)$("answerPoolSelect").value="";
+}
+window.deleteAnswerPoolById=deleteAnswerPoolById;
+
 function categories(){
   return [...new Set(bank.map(x=>x.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 }
@@ -664,9 +1128,29 @@ function getSelectedTestSubcategories(){
   if(!select)return [];
   return [...select.selectedOptions].map(o=>o.value).filter(Boolean);
 }
+let testSelectionInitialized=false;
+
+function updateTestSelectionStatus(){
+  const cats=getSelectedTestCategories();
+  const subs=getSelectedTestSubcategories();
+  const catEl=$("testCategorySelection");
+  const subEl=$("testSubcategorySelection");
+  if(catEl){
+    catEl.innerHTML=cats.length
+      ? `Selected: <strong>${esc(cats.join(", "))}</strong>`
+      : `Selected: <strong>All categories</strong>`;
+  }
+  if(subEl){
+    subEl.innerHTML=subs.length
+      ? `Selected: <strong>${esc(subs.join(", "))}</strong>`
+      : `Selected: <strong>All subcategories</strong>`;
+  }
+}
+
 function setSelectedTestSubcategories(values){
   const wanted=new Set(Array.isArray(values)?values:(values?[values]:[]));
   [...$("testSubcategory").options].forEach(o=>o.selected=wanted.has(o.value));
+  updateTestSelectionStatus();
 }
 function refreshSubcategoryControls(preserve=true){
   const select=$("testSubcategory");
@@ -701,10 +1185,25 @@ function renderCategoryControls(){
 
   const testSelect=$("testCategory");
   if(testSelect){
-    const current=getSelectedTestCategories();
+    let current=getSelectedTestCategories();
     testSelect.innerHTML=customCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    if(!testSelectionInitialized && !current.length && customCategories.length){
+      current=[customCategories[0]];
+    }
+
     setSelectedTestCategories(current);
     refreshSubcategoryControls(true);
+
+    if(!testSelectionInitialized){
+      const subSelect=$("testSubcategory");
+      if(subSelect && subSelect.options.length && !getSelectedTestSubcategories().length){
+        subSelect.options[0].selected=true;
+      }
+      testSelectionInitialized=true;
+    }
+
+    updateTestSelectionStatus();
   }
 
   refreshSubcategorySuggestions();
@@ -827,6 +1326,7 @@ function getCurrentTestSettings(){
     selectedQuestionIds:customQuestionMode?[...selectedCustomQuestionIds]:[],
     showCorrectOnWrong:$("showCorrectOnWrong").checked,
     transitionTime:Math.max(0,+$("transitionTime").value||0),
+    questionTimeout:Math.min(15,Math.max(0,+$("questionTimeout").value||0)),
     manualNext:$("manualNext").checked
   };
 }
@@ -1027,6 +1527,7 @@ function recordCompletedTest(){
       selectedQuestionIds:test.map(x=>x.id),
       showCorrectOnWrong:!!currentTestMeta.showCorrectOnWrong,
       transitionTime:currentTestMeta.transitionTime ?? transitionTime,
+      questionTimeout:currentTestMeta.questionTimeout ?? questionTimeout,
       manualNext:currentTestMeta.manualNext ?? manualNext
     },
     averageTime:answers.length?total/answers.length:0,
@@ -1086,6 +1587,9 @@ function historySettingTags(r){
   }
 
   tags.push(s.customQuestionMode?"Selected questions":"Random questions");
+  const qTimeout=Number(s.questionTimeout)||0;
+  tags.push(qTimeout>0?`Question timeout: ${qTimeout} min`:"No question timeout");
+
   return tags;
 }
 
@@ -1298,6 +1802,7 @@ function runTestDefinition(questionList,settings,meta={}){
     customQuestionMode:!!settings.customQuestionMode,
     showCorrectOnWrong:!!settings.showCorrectOnWrong,
     transitionTime:Math.max(0,+settings.transitionTime||0),
+    questionTimeout:Math.min(15,Math.max(0,+settings.questionTimeout||0)),
     manualNext:!!settings.manualNext
   };
 
@@ -1308,6 +1813,7 @@ function runTestDefinition(questionList,settings,meta={}){
   showCorrectOnWrong=!!settings.showCorrectOnWrong;
   manualNext=!!settings.manualNext;
   transitionTime=Math.max(0,+settings.transitionTime||0);
+  questionTimeout=Math.min(15,Math.max(0,+settings.questionTimeout||0));
 
   test=[...questionList];
   idx=0;correct=0;answers=[];started=performance.now();qStarted=started;
@@ -1321,6 +1827,7 @@ function runTestDefinition(questionList,settings,meta={}){
   $("selectCustomQuestions").checked=!!settings.customQuestionMode;
   $("showCorrectOnWrong").checked=showCorrectOnWrong;
   $("transitionTime").value=transitionTime;
+  $("questionTimeout").value=questionTimeout;
   $("manualNext").checked=manualNext;
   $("transitionTime").disabled=manualNext;
 
@@ -1366,6 +1873,7 @@ function editCustomTestById(id){
   setCustomQuestionMode(!!t.settings.customQuestionMode, t.settings.selectedQuestionIds||t.questionIds||[]);
   $("showCorrectOnWrong").checked=!!t.settings.showCorrectOnWrong;
   $("transitionTime").value=t.settings.transitionTime;
+  $("questionTimeout").value=Math.min(15,Math.max(0,+t.settings.questionTimeout||0));
   $("manualNext").checked=!!t.settings.manualNext;
   $("transitionTime").disabled=$("manualNext").checked;
 
@@ -1496,11 +2004,137 @@ function updateUI(){
 let editingQuestionId = null;
 
 function setAddTab(){
-  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
-  document.querySelector('[data-tab="add"]').classList.add("active");
-  $("add").classList.add("active");
+  openQuestionData("add");
 }
+
+let editingImageDraft = [];
+
+function getQuestionImages(q){
+  if(!q)return [];
+  if(Array.isArray(q.images)) return q.images.filter(Boolean);
+  return q.image ? [q.image] : [];
+}
+
+function renderQuestionImagePreview(images, label="Saved images"){
+  const box=$("questionImagePreview");
+  if(!box)return;
+  const list=Array.isArray(images) ? images.filter(Boolean) : (images ? [images] : []);
+  if(!list.length){
+    box.innerHTML="";
+    box.classList.add("hidden");
+    return;
+  }
+
+  box.classList.remove("hidden");
+  box.innerHTML=`
+    <p class="image-preview-label">${esc(label)} — ${list.length} image${list.length===1?"":"s"}</p>
+    <div class="question-image-gallery"></div>
+    <p class="image-preview-note">Images are randomly chosen during tests. Use the × on an image to remove it. Adding more images does not replace the existing ones.</p>`;
+
+  const gallery=box.querySelector(".question-image-gallery");
+  list.forEach((src,index)=>{
+    const tile=document.createElement("div");
+    tile.className="question-image-tile";
+    const image=document.createElement("img");
+    image.src=src;
+    image.alt=`Question image ${index+1}`;
+    const remove=document.createElement("button");
+    remove.type="button";
+    remove.className="question-image-remove";
+    remove.textContent="×";
+    remove.title="Remove this image";
+    remove.onclick=()=>{
+      editingImageDraft.splice(index,1);
+      renderQuestionImagePreview(editingImageDraft,"Question images");
+    };
+    tile.appendChild(image);
+    tile.appendChild(remove);
+    gallery.appendChild(tile);
+  });
+}
+
+$("takePhoto").onclick=async()=>{
+  // Prefer the browser camera API when available. This works on HTTPS pages
+  // such as the deployed GitHub Pages app. Desktop browsers can use a webcam;
+  // phones will normally use their rear/front camera selector.
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    $("img").click();
+    return;
+  }
+
+  const modal=document.createElement("div");
+  modal.className="camera-modal";
+  modal.innerHTML=`
+    <div class="camera-dialog">
+      <video autoplay playsinline></video>
+      <div class="camera-actions">
+        <button type="button" class="camera-cancel">Cancel</button>
+        <button type="button" class="camera-capture">Take Picture</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const video=modal.querySelector("video");
+  let stream=null;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+    video.srcObject=stream;
+    await video.play();
+
+    modal.querySelector(".camera-cancel").onclick=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      modal.remove();
+    };
+
+    modal.querySelector(".camera-capture").onclick=()=>{
+      const canvas=document.createElement("canvas");
+      canvas.width=video.videoWidth||1280;
+      canvas.height=video.videoHeight||720;
+      canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+      canvas.toBlob(blob=>{
+        if(!blob)return;
+        const reader=new FileReader();
+        reader.onload=()=>{
+          editingImageDraft.push(String(reader.result||""));
+          renderQuestionImagePreview(editingImageDraft,"Question images");
+          stream.getTracks().forEach(t=>t.stop());
+          modal.remove();
+        };
+        reader.readAsDataURL(blob);
+      },"image/jpeg",0.9);
+    };
+  }catch(err){
+    if(stream)stream.getTracks().forEach(t=>t.stop());
+    modal.remove();
+    // Permission denied, unsupported camera, or other browser issue:
+    // gracefully fall back to the existing file picker.
+    $("img").click();
+  }
+};
+
+$("img").onchange=()=>{
+  const files=[...($("img").files||[])];
+  if(!files.length){
+    renderQuestionImagePreview(editingImageDraft,"Question images");
+    return;
+  }
+
+  let remaining=files.length;
+  const additions=[];
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      if(reader.result) additions.push(String(reader.result));
+      remaining--;
+      if(remaining===0){
+        editingImageDraft.push(...additions);
+        renderQuestionImagePreview(editingImageDraft,"Question images");
+        $("img").value="";
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+};
 
 function editQuestion(i){
   const x=bank[i];
@@ -1520,26 +2154,42 @@ function editQuestion(i){
     $("typedEditor").classList.add("hidden");
     $("mcEditor").classList.remove("hidden");
 
-    const poolCount=Math.min(25,Math.max(2,x.poolCount||x.choices?.length||4));
+    const referencedPool=getAnswerPoolById(x.answerPoolId);
+    const sourceChoices=(referencedPool && !x.answerPoolOverride) ? referencedPool.answers : (x.choices||[]);
+    const poolCount=Math.min(25,Math.max(2,x.poolCount||sourceChoices.length||4));
     const displayCount=Math.min(25,Math.max(2,x.displayCount||4));
     $("mcPoolCount").value=poolCount;
     $("mcDisplayCount").value=displayCount;
+    refreshAnswerPoolSelect(x.answerPoolId||"");
 
     mcDraft=Array.from({length:25},()=>({text:"",pool:true,correct:false}));
-    (x.choices||[]).forEach((choice,i)=>{
-      if(i<25) mcDraft[i]={text:choice,pool:true,correct:choice===x.correct};
+    sourceChoices.slice(0,25).forEach((choice,i)=>{
+      if(i<25) mcDraft[i]={text:choice,pool:true,correct:(x.correctAnswers||[x.correct]).includes(choice)};
     });
 
-    // If the original question used more available choices than were stored
-    // as selected pool choices, preserve the stored custom choices.
-    renderChoiceEditor();
+    // The draft was just populated from the saved question above. Do NOT
+    // capture the old DOM here, because the old DOM may still contain the
+    // blank Add Question form and would overwrite the loaded draft.
+    // preserveDraft=true tells the renderer to use the freshly loaded data.
+    renderChoiceEditor(true);
 
     $("allAbove").checked=!!x.allAbove;
     $("noneAbove").checked=!!x.noneAbove;
     $("allAboveCorrectWrap").classList.toggle("hidden",!x.allAbove);
     $("noneAboveCorrectWrap").classList.toggle("hidden",!x.noneAbove);
     $("allAboveCorrect").checked=x.correct==="All of the above";
-    $("noneAboveCorrect").checked=x.correct==="None of the above";
+    $("noneAboveCorrect").checked=(x.correctAnswers||[x.correct]).includes("None of the above");
+    $("multipleCorrect").checked=!!x.multipleCorrect || (x.correctAnswers||[]).length>1;
+    const storedCorrectCount=(x.correctAnswers||[x.correct]).filter(Boolean).length;
+    const editDisplay=Math.min(25,Math.max(2,parseInt(x.displayCount,10)||4));
+    const editUpper=Math.max(1,Math.min(storedCorrectCount||1,editDisplay));
+    const hasStoredMin=Number.isFinite(Number(x.minCorrectAnswers)) && Number(x.minCorrectAnswers)>0;
+    const hasStoredMax=Number.isFinite(Number(x.maxCorrectAnswers)) && Number(x.maxCorrectAnswers)>0;
+    const loadedMin=hasStoredMin ? Math.max(1,Math.min(25,Number(x.minCorrectAnswers))) : 1;
+    const loadedMax=hasStoredMax ? Math.max(loadedMin,Math.min(25,Number(x.maxCorrectAnswers))) : editUpper;
+    $("minCorrectAnswers").value=loadedMin;
+    $("maxCorrectAnswers").value=loadedMax;
+    $("multipleCorrectSettings").classList.toggle("hidden",!$("multipleCorrect").checked);
   }else{
     $("typedEditor").classList.remove("hidden");
     $("mcEditor").classList.add("hidden");
@@ -1548,7 +2198,9 @@ function editQuestion(i){
     mcRemovedDraft={};
   }
 
+  editingImageDraft=getQuestionImages(x);
   $("img").value="";
+  renderQuestionImagePreview(editingImageDraft,"Saved question images");
   $("saveMsg").textContent="Editing existing question. Saving will replace the old version.";
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -1592,36 +2244,50 @@ function openTestRunner(){
   $("quiz").classList.remove("hidden");
 }
 
-function openTestHistory(subtab="savedHistory"){
-  const parent=$("testHistoryTab");
-  const menu=$("testHistorySubtabs");
-  menu.classList.remove("hidden");
+function clearNavigationActive(){
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-  document.querySelectorAll(".subtab").forEach(x=>x.classList.remove("active"));
-  parent.classList.add("active");
-  const button=document.querySelector(`[data-tab="${subtab}"]`);
-  if(button)button.classList.add("active");
+  document.querySelectorAll(".section-subnav .subtab").forEach(x=>x.classList.remove("active"));
+}
+function activatePanel(id){
   document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
-  $(subtab).classList.add("active");
+  const panel=$(id);
+  if(panel)panel.classList.add("active");
+}
+function openTestHistory(subtab="savedHistory"){
+  activatePanel(subtab);
+  document.querySelectorAll("[data-history-tab]").forEach(x=>x.classList.toggle("active",x.dataset.historyTab===subtab));
+  document.querySelectorAll("[data-question-tab]").forEach(x=>x.classList.remove("active"));
 }
 window.openTestHistory=openTestHistory;
 
 $("testHistoryTab").onclick=()=>{
-  const menu=$("testHistorySubtabs");
-  if(menu.classList.contains("hidden")) openTestHistory("savedHistory");
-  else menu.classList.add("hidden");
+  openTestHistory("savedHistory");
+};
+
+function openQuestionData(subtab="add"){
+  activatePanel(subtab);
+  document.querySelectorAll("[data-question-tab]").forEach(x=>x.classList.toggle("active",x.dataset.questionTab===subtab));
+  document.querySelectorAll("[data-history-tab]").forEach(x=>x.classList.remove("active"));
+}
+window.openQuestionData=openQuestionData;
+
+$("questionDataTab").onclick=()=>{
+  openQuestionData("add");
 };
 
 document.querySelectorAll(".tab[data-tab]").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-  document.querySelectorAll(".subtab").forEach(x=>x.classList.remove("active"));
-  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
-  b.classList.add("active");
-  $(b.dataset.tab).classList.add("active");
-  $("testHistorySubtabs").classList.add("hidden");
+  clearNavigationActive();
+  activatePanel(b.dataset.tab);
+  if(b.dataset.tab==="test") b.classList.add("active");
 });
 
-document.querySelectorAll(".subtab[data-tab]").forEach(b=>b.onclick=()=>openTestHistory(b.dataset.tab));
+document.querySelectorAll("[data-history-tab]").forEach(b=>b.onclick=()=>{
+  openTestHistory(b.dataset.historyTab);
+});
+
+document.querySelectorAll("[data-question-tab]").forEach(b=>b.onclick=()=>{
+  openQuestionData(b.dataset.questionTab);
+});
 
 let mcDraft = Array.from({length:25},()=>({text:"",pool:true,correct:false}));
 let mcRemovedDraft = {};
@@ -1651,8 +2317,11 @@ function rebuildMCDraftFromVisible(){
   }
 }
 
-function renderChoiceEditor(){
-  captureMCDraft();
+function renderChoiceEditor(preserveDraft=false){
+  // Normal UI changes capture what is currently visible. When loading an
+  // existing question, preserveDraft=true means the caller has already loaded
+  // mcDraft from saved data and the old DOM must not overwrite it.
+  if(!preserveDraft) captureMCDraft();
 
   const oldCount = parseInt($("mcPoolCount").value)||4;
   const requested = Math.min(25,Math.max(2,oldCount));
@@ -1719,35 +2388,212 @@ function renderChoiceEditor(){
   }
   $("choiceEditor").innerHTML=out;
 }
+
+function normalizeChoiceList(list){
+  return (list||[]).map(x=>String(x).trim()).filter(Boolean);
+}
+function updateAnswerPoolEditWarning(){
+  const id=$("answerPoolSelect")?.value||"";
+  const pool=getAnswerPoolById(id);
+  if(!$("answerPoolEditWarning"))return;
+  if(!pool){
+    $("answerPoolEditWarning").classList.add("hidden");
+    return;
+  }
+  captureMCDraft();
+  const n=Math.min(25,Math.max(2,parseInt($("mcPoolCount").value,10)||4));
+  const local=normalizeChoiceList(mcDraft.slice(0,n).filter(x=>x.pool).map(x=>x.text));
+  const original=normalizeChoiceList(pool.answers.slice(0,25));
+  const changed=JSON.stringify(local)!==JSON.stringify(original);
+  $("answerPoolEditWarning").classList.toggle("hidden",!changed);
+}
+function currentChoiceTexts(){
+  captureMCDraft();
+  const n=Math.min(25,Math.max(2,parseInt($("mcPoolCount").value,10)||4));
+  return mcDraft.slice(0,n).map(x=>x.text.trim()).filter(Boolean);
+}
+function loadAnswerPoolIntoEditor(pool,force=false){
+  if(!pool)return;
+  const current=currentChoiceTexts();
+  if(current.length && !force){
+    const ok=confirm(`Loading "${pool.name}" will replace the choices currently entered for this question. Continue?`);
+    if(!ok){
+      $("answerPoolSelect").value="";
+      $("editSelectedAnswerPool").classList.add("hidden");
+      return false;
+    }
+  }
+  const answers=pool.answers.slice(0,25);
+  $("mcPoolCount").value=Math.max(2,answers.length);
+  mcDraft=Array.from({length:25},(_,i)=>({
+    text:answers[i]||"",pool:!!answers[i],correct:false
+  }));
+  $("answerPoolSelect").value=pool.id;
+  $("editSelectedAnswerPool").classList.remove("hidden");
+  $("answerPoolEditWarning").classList.add("hidden");
+  mcRemovedDraft={};
+  renderChoiceEditor(true);
+  return true;
+}
+$("answerPoolSelect").onchange=()=>{
+  const id=$("answerPoolSelect").value;
+  if(!id){
+    $("editSelectedAnswerPool").classList.add("hidden");
+    $("answerPoolEditWarning").classList.add("hidden");
+    return;
+  }
+  const pool=getAnswerPoolById(id);
+  if(pool)loadAnswerPoolIntoEditor(pool);
+};
+$("choiceEditor").addEventListener("input",()=>{
+  updateAnswerPoolEditWarning();
+});
+$("choiceEditor").addEventListener("change",()=>{
+  updateAnswerPoolEditWarning();
+});
+$("editSelectedAnswerPool").onclick=()=>{
+  const id=$("answerPoolSelect").value;
+  if(id)editAnswerPoolById(id);
+};
+$("saveCurrentAnswerPool").onclick=()=>{
+  const answers=currentChoiceTexts();
+  if(answers.length<2){
+    alert("Enter at least 2 non-empty answers before saving an answer pool.");
+    return;
+  }
+  const name=prompt("Name this answer pool:",$("answerPoolSelect").value?getAnswerPoolById($("answerPoolSelect").value)?.name||"":"");
+  if(name===null)return;
+  const cleanName=name.trim();
+  if(!cleanName){alert("The answer pool needs a name.");return;}
+  const duplicate=answerPools.find(p=>p.name.toLowerCase()===cleanName.toLowerCase() && p.id!==$("answerPoolSelect").value);
+  if(duplicate){alert("An answer pool with that name already exists.");return;}
+  const existingId=$("answerPoolSelect").value;
+  if(existingId){
+    if(!confirm(`Update "${getAnswerPoolById(existingId)?.name||cleanName}" with the current answers? Every question referencing it will use the updated pool.`))return;
+    const p=getAnswerPoolById(existingId);
+    if(p){p.name=cleanName;p.answers=answers;p.updatedAt=Date.now();}
+  }else{
+    const p={id:crypto.randomUUID(),name:cleanName,answers,updatedAt:Date.now()};
+    answerPools.push(p);
+    $("answerPoolSelect").value=p.id;
+  }
+  saveAnswerPools();
+  $("editSelectedAnswerPool").classList.remove("hidden");
+  $("saveMsg").textContent="Answer pool saved.";
+};
+$("saveAnswerPool").onclick=()=>{
+  const name=$("poolName").value.trim();
+  const answers=cleanPoolAnswers($("poolAnswers").value);
+  if(!name){$("answerPoolMsg").textContent="Give the answer pool a name.";return;}
+  if(answers.length<2){$("answerPoolMsg").textContent="Enter at least 2 answers.";return;}
+  const duplicate=answerPools.find(p=>p.name.toLowerCase()===name.toLowerCase()&&p.id!==editingAnswerPoolId);
+  if(duplicate){$("answerPoolMsg").textContent="An answer pool with that name already exists.";return;}
+  if(editingAnswerPoolId){
+    const p=getAnswerPoolById(editingAnswerPoolId);
+    if(p){p.name=name;p.answers=answers;p.updatedAt=Date.now();}
+  }else{
+    answerPools.push({id:crypto.randomUUID(),name,answers,updatedAt:Date.now()});
+  }
+  saveAnswerPools();
+  editingAnswerPoolId=null;
+  $("poolName").value="";$("poolAnswers").value="";
+  $("answerPoolMsg").textContent="Answer pool saved.";
+  $("poolCombineMsg").textContent="";
+};
+$("clearAnswerPool").onclick=()=>{
+  editingAnswerPoolId=null;$("poolName").value="";$("poolAnswers").value="";$("answerPoolMsg").textContent="";
+};
+
 $("qtype").onchange=()=>{
   const mc=$("qtype").value==="mc";
   $("typedEditor").classList.toggle("hidden",mc);
   $("mcEditor").classList.toggle("hidden",!mc);
-  if(mc)renderChoiceEditor();
-};
-$("mcPoolCount").onfocus=()=>{ mcRemovalPrompted=false; };
-$("mcPoolCount").oninput=()=>{
-  const oldVisible=$("choiceEditor").querySelectorAll(".choice-text").length;
-  const requested=Math.min(25,Math.max(2,parseInt($("mcPoolCount").value)||4));
-  if(requested>oldVisible){
-    // Capture current entries first; any previously removed rows are restored
-    // automatically by renderChoiceEditor.
-    captureMCDraft();
+  if(mc){
+    renderChoiceEditor();
+    updateMultipleCorrectSettings();
   }
+};
+$("mcPoolCount").onfocus=()=>{
+  mcRemovalPrompted=false;
+};
+$("mcPoolCount").oninput=()=>{
+  // Do not rebuild the answer editor while the user is typing. This allows
+  // the field to temporarily contain "" or "0" while replacing a number.
+};
+$("mcPoolCount").onblur=()=>{
+  const oldVisible=$("choiceEditor").querySelectorAll(".choice-text").length;
+  let raw=$("mcPoolCount").value.trim();
+  let requested=raw===""||raw==="0" ? 2 : Math.min(25,Math.max(2,parseInt(raw,10)||2));
+  if(requested>oldVisible) captureMCDraft();
+  $("mcPoolCount").value=requested;
   renderChoiceEditor();
 
   const extras=($("allAbove").checked?1:0)+($("noneAbove").checked?1:0);
-  const max=requested+extras;
-  $("mcDisplayCount").value=Math.min(max,Math.max(2,parseInt($("mcDisplayCount").value)||4));
+  const max=Math.min(25,requested+extras);
+  const displayRaw=$("mcDisplayCount").value.trim();
+  const display=displayRaw===""||displayRaw==="0" ? 2 : Math.min(max,Math.max(2,parseInt(displayRaw,10)||2));
+  $("mcDisplayCount").value=display;
 };
+$("mcDisplayCount").oninput=()=>{
+  // Wait until blur so deleting/replacing the current value is possible.
+};
+$("mcDisplayCount").onblur=()=>{
+  const poolRaw=$("mcPoolCount").value.trim();
+  const pool=poolRaw===""||poolRaw==="0" ? 2 : Math.min(25,Math.max(2,parseInt(poolRaw,10)||2));
+  $("mcPoolCount").value=pool;
+  const raw=$("mcDisplayCount").value.trim();
+  const extras=($("allAbove").checked?1:0)+($("noneAbove").checked?1:0);
+  const max=Math.min(25,pool+extras);
+  const display=raw===""||raw==="0" ? 2 : Math.min(max,Math.max(2,parseInt(raw,10)||2));
+  $("mcDisplayCount").value=display;
+};
+function updateMultipleCorrectSettings(){
+  const enabled=$("multipleCorrect").checked;
+  $("multipleCorrectSettings").classList.toggle("hidden",!enabled);
+  if(!enabled){
+    $("minCorrectAnswers").value=1;
+    $("maxCorrectAnswers").value=1;
+    return;
+  }
+  captureMCDraft();
+  const correctCount=mcDraft.slice(0,25).filter(x=>x.text.trim() && x.correct).length
+    + ($("allAboveCorrect")?.checked?1:0)
+    + ($("noneAboveCorrect")?.checked?1:0);
+  const display=Math.min(25,Math.max(2,parseInt($("mcDisplayCount").value,10)||4));
+  const upper=Math.max(1,Math.min(correctCount||1,display));
+  let min=Math.min(upper,Math.max(1,parseInt($("minCorrectAnswers").value,10)||1));
+  let max=Math.min(upper,Math.max(min,parseInt($("maxCorrectAnswers").value,10)||upper));
+  $("minCorrectAnswers").value=min;
+  $("maxCorrectAnswers").value=max;
+}
+$("multipleCorrect").onchange=updateMultipleCorrectSettings;
+$("minCorrectAnswers").onblur=()=>{
+  const raw=$("minCorrectAnswers").value.trim();
+  const maxRaw=$("maxCorrectAnswers").value.trim();
+  const max=maxRaw===""||maxRaw==="0" ? 1 : Math.min(25,Math.max(1,parseInt(maxRaw,10)||1));
+  const value=raw===""||raw==="0" ? 1 : Math.min(25,Math.max(1,parseInt(raw,10)||1));
+  $("minCorrectAnswers").value=Math.min(value,max);
+};
+$("maxCorrectAnswers").onblur=()=>{
+  const raw=$("maxCorrectAnswers").value.trim();
+  const minRaw=$("minCorrectAnswers").value.trim();
+  const min=minRaw===""||minRaw==="0" ? 1 : Math.min(25,Math.max(1,parseInt(minRaw,10)||1));
+  const value=raw===""||raw==="0" ? min : Math.min(25,Math.max(min,parseInt(raw,10)||min));
+  $("maxCorrectAnswers").value=value;
+};
+
 $("allAbove").onchange=()=>{
   $("allAboveCorrectWrap").classList.toggle("hidden",!$("allAbove").checked);
   if(!$("allAbove").checked) $("allAboveCorrect").checked=false;
+  updateMultipleCorrectSettings();
 };
 $("noneAbove").onchange=()=>{
   $("noneAboveCorrectWrap").classList.toggle("hidden",!$("noneAbove").checked);
   if(!$("noneAbove").checked) $("noneAboveCorrect").checked=false;
+  updateMultipleCorrectSettings();
 };
+$("allAboveCorrect").onchange=updateMultipleCorrectSettings;
+$("noneAboveCorrect").onchange=updateMultipleCorrectSettings;
 
 $("save").onclick=()=>{
   captureMCDraft();
@@ -1766,6 +2612,8 @@ $("save").onclick=()=>{
     if(!answers.length){$("saveMsg").textContent="Need at least one accepted answer.";return;}
     item.answers=answers;
   } else {
+    const selectedAnswerPoolId=$("answerPoolSelect").value||null;
+    const selectedAnswerPool=getAnswerPoolById(selectedAnswerPoolId);
     const n=Math.min(25,Math.max(2,parseInt($("mcPoolCount").value)||4));
     const choices=[];
     let correct=[];
@@ -1781,21 +2629,54 @@ $("save").onclick=()=>{
     const specialCorrect=[];
     if(all && $("allAboveCorrect")?.checked) specialCorrect.push("All of the above");
     if(none && $("noneAboveCorrect")?.checked) specialCorrect.push("None of the above");
-    if(correct.length + specialCorrect.length!==1){$("saveMsg").textContent="Check exactly one choice as Correct.";return;}
-    const finalCorrect=correct.length ? correct[0] : specialCorrect[0];
-    if(finalCorrect!=="All of the above" && finalCorrect!=="None of the above" && !choices.includes(finalCorrect)) choices.push(finalCorrect);
+    correct=[...correct,...specialCorrect];
+    const allowMultiple=$("multipleCorrect").checked;
+    if(!correct.length){$("saveMsg").textContent="Check at least one choice as Correct.";return;}
+    if(!allowMultiple && correct.length!==1){$("saveMsg").textContent="Disable multiple correct answers or leave exactly one Correct choice checked.";return;}
+    let minCorrect=1,maxCorrect=1;
+    if(allowMultiple){
+      const display=Math.min(25,Math.max(2,parseInt($("mcDisplayCount").value,10)||4));
+      minCorrect=Math.max(1,parseInt($("minCorrectAnswers").value,10)||1);
+      maxCorrect=Math.max(minCorrect,parseInt($("maxCorrectAnswers").value,10)||minCorrect);
+      if(minCorrect>correct.length || maxCorrect>correct.length){
+        $("saveMsg").textContent=`Minimum/maximum correct answers cannot exceed the ${correct.length} correct answer${correct.length===1?"":"s"} defined for this question. Adjust the range before saving.`;
+        return;
+      }
+      if(maxCorrect>display){
+        $("saveMsg").textContent=`Maximum correct answers cannot exceed the ${display} answers actually displayed. Adjust the range before saving.`;
+        return;
+      }
+    }
+    for(const c of correct){
+      if(c!=="All of the above" && c!=="None of the above" && !choices.includes(c)) choices.push(c);
+    }
+    if(selectedAnswerPool){
+      const poolAnswers=new Set(selectedAnswerPool.answers);
+      const invalid=correct.filter(c=>c!=="All of the above"&&c!=="None of the above"&&!poolAnswers.has(c));
+      if(invalid.length){$("saveMsg").textContent=`Correct answer${invalid.length>1?"s":""} must exist in the selected answer pool.`;return;}
+    }
     if(choices.length<2){$("saveMsg").textContent="Enter at least 2 non-empty choices.";return;}
-    item.choices=choices;
-    item.correct=finalCorrect;
+    const poolSource=selectedAnswerPool ? selectedAnswerPool.answers.slice(0,25) : null;
+    const localChoiceList=choices.slice(0,25);
+    const poolOverride=!!selectedAnswerPool && JSON.stringify(normalizeChoiceList(localChoiceList))!==JSON.stringify(normalizeChoiceList(poolSource));
+    item.choices=selectedAnswerPool && !poolOverride ? poolSource : localChoiceList;
+    item.correctAnswers=correct;
+    item.answerPoolId=selectedAnswerPoolId;
+    item.answerPoolOverride=poolOverride;
+    item.correct=correct[0];
     item.allAbove=all;
     item.noneAbove=none;
+    item.multipleCorrect=allowMultiple;
+    item.minCorrectAnswers=minCorrect;
+    item.maxCorrectAnswers=maxCorrect;
     item.poolCount=n;
     item.displayCount=Math.min(n+(all?1:0)+(none?1:0),Math.max(2,Math.min(25,parseInt($("mcDisplayCount").value)||4)));
   }
 
-  const file=$("img").files[0];
-  const finish=imageData=>{
-    item.image=imageData||"";
+  const finish=()=>{
+    item.images=[...editingImageDraft];
+    // Keep the legacy single-image field for older app versions.
+    item.image=item.images[0]||"";
     if(editingQuestionId){
       const existingIndex=bank.findIndex(x=>x.id===editingQuestionId);
       if(existingIndex>=0) bank.splice(existingIndex,1,item);
@@ -1808,15 +2689,21 @@ $("save").onclick=()=>{
     clearForm();
     $("saveMsg").textContent="Saved.";
   };
-  if(file){const r=new FileReader();r.onload=()=>finish(r.result);r.readAsDataURL(file);} else finish("");
+  finish();
 };
 
 function clearForm(){
   editingQuestionId=null;
+  editingImageDraft=[];
+  renderQuestionImagePreview("");
   $("cat").value="";$("subcat").value="";$("difficulty").value="normal";$("q").value="";$("a").value="";$("img").value="";
   $("qtype").value="typed";$("typedEditor").classList.remove("hidden");$("mcEditor").classList.add("hidden");
   $("mcPoolCount").value=4;$("mcDisplayCount").value=4;$("allAbove").checked=false;$("noneAbove").checked=false;
-  $("allAboveCorrect").checked=false;$("noneAboveCorrect").checked=false;
+  $("answerPoolSelect").value="";$("editSelectedAnswerPool").classList.add("hidden");
+  $("answerPoolEditWarning").classList.add("hidden");
+  $("allAboveCorrect").checked=false;$("noneAboveCorrect").checked=false;$("multipleCorrect").checked=false;
+  $("minCorrectAnswers").value=1;$("maxCorrectAnswers").value=1;
+  $("multipleCorrectSettings").classList.add("hidden");
   $("allAboveCorrectWrap").classList.add("hidden");$("noneAboveCorrectWrap").classList.add("hidden");
   mcDraft=Array.from({length:25},()=>({text:"",pool:true,correct:false}));
   mcRemovedDraft={};
@@ -1876,8 +2763,20 @@ $("saveCustomTest").onclick=()=>{
   $("cancelTestEdit").classList.remove("hidden");
 };
 
+refreshAnswerPoolSelect();
+renderAnswerPoolList();
+renderPoolCombineList();
 renderChoiceEditor();
+updateMultipleCorrectSettings();
 
+
+// Normalize older multiple-choice questions to the newer multi-correct format.
+const MC_MULTI_MIGRATION_KEY="knowledge-speedrun-mc-multiple-v1";
+if(!localStorage.getItem(MC_MULTI_MIGRATION_KEY)){
+  bank=bank.map(q=>q.type==="mc" ? {...q,correctAnswers:Array.isArray(q.correctAnswers)&&q.correctAnswers.length?q.correctAnswers:[q.correct],multipleCorrect:Array.isArray(q.correctAnswers)&&q.correctAnswers.length>1} : q);
+  localStorage.setItem(KEY,JSON.stringify(bank));
+  localStorage.setItem(MC_MULTI_MIGRATION_KEY,"1");
+}
 
 function normalize(s){return s.toLowerCase().trim().replace(/[.,!?;:'"()\-_/]/g," ").replace(/\s+/g," ");}
 function equivalent(user, accepted){
@@ -1954,23 +2853,69 @@ $("start").onclick=()=>{
   });
 };
 function tick(){
-  const sec=(performance.now()-started)/1000;
+  const now=performance.now();
+  const sec=(now-started)/1000;
   $("elapsed").textContent=sec.toFixed(2);
+
   const lim=(+$("limit").value||0)*60;
-  if(lim&&sec>=lim){finishTest();}
+  if(lim&&sec>=lim){
+    finishTest("Test time limit reached.");
+    return;
+  }
+
+  // This is deliberately per-question rather than per-test. The test timer
+  // continues to run even when the user switches to another app panel, so a
+  // forgotten active test can eventually time out in the background.
+  const timeout=Math.min(15,Math.max(0,+questionTimeout||0))*60;
+  if(timeout && idx<test.length && qStarted && (now-qStarted)/1000>=timeout){
+    timeoutTest();
+  }
+}
+function correctAnswersFor(x){
+  const arr=Array.isArray(x.correctAnswers)&&x.correctAnswers.length ? x.correctAnswers : [x.correct];
+  return [...new Set(arr.filter(Boolean))];
 }
 function buildMCOptions(x){
   const desired=Math.min(25,Math.max(2,x.displayCount||4));
-  let pool=shuffle(x.choices);
+  const referencedPool=getAnswerPoolById(x.answerPoolId);
+  const sourceChoices=(referencedPool && !x.answerPoolOverride) ? referencedPool.answers : (x.choices||[]);
+  let pool=shuffle([...sourceChoices]);
+  let corrects=correctAnswersFor(x);
+
   if(x.allAbove) pool.push("All of the above");
   if(x.noneAbove) pool.push("None of the above");
-  if(!pool.includes(x.correct)) pool.push(x.correct);
-  const selected=[x.correct];
-  const remaining=shuffle(pool.filter(v=>v!==x.correct));
+
+  // Treat a saved question with multiple correctAnswers as multiple-correct
+  // even if it was created before the newer checkbox/min-max fields existed.
+  // This keeps older question-bank entries from silently becoming single-answer.
+  const multipleEnabled=!!x.multipleCorrect || corrects.length>1;
+
+  // Multiple-correct questions can randomly require a subset of their
+  // defined correct answers. The visible answer count remains independent.
+  let correctsToDisplay=corrects.slice();
+  if(multipleEnabled && corrects.length>1){
+    const min=Math.max(1,Math.min(corrects.length,parseInt(x.minCorrectAnswers,10)||1));
+    const storedMax=parseInt(x.maxCorrectAnswers,10);
+    const max=Math.max(min,Math.min(corrects.length,desired,Number.isFinite(storedMax)?storedMax:corrects.length));
+    const amount=min+Math.floor(Math.random()*(max-min+1));
+    correctsToDisplay=shuffle(corrects).slice(0,amount);
+  }
+
+  correctsToDisplay.forEach(c=>{if(!pool.includes(c))pool.push(c);});
+  x.runtimeCorrectAnswers=correctsToDisplay.slice();
+  x.runtimeRequiredCount=correctsToDisplay.length;
+
+  // Any correct answer that was NOT chosen for this presentation is a
+  // distractor-ineligible answer. It must not appear, or the player could
+  // legitimately see three "correct" answers while being told to select two.
+  const allCorrectSet=new Set(corrects);
+  const remaining=shuffle(pool.filter(v=>!allCorrectSet.has(v)));
+
+  const selected=correctsToDisplay.slice();
   while(selected.length<Math.min(desired,pool.length) && remaining.length){
     selected.push(remaining.shift());
   }
-  return shuffle(selected);
+  return shuffle([...new Set(selected)]);
 }
 function renderQuestion(){
   if(idx>=test.length){finishTest();return;}
@@ -1979,48 +2924,105 @@ function renderQuestion(){
   const oldNext=$("nextArrow"); if(oldNext) oldNext.remove();
   $("qnum").textContent=`${idx+1}/${test.length}`;
   $("question").textContent=x.question;
-  if(x.image){$("qimage").src=x.image;$("qimage").classList.remove("hidden");}else $("qimage").classList.add("hidden");
+  const questionImages=getQuestionImages(x);
+  if(questionImages.length){
+    const chosenImage=questionImages[Math.floor(Math.random()*questionImages.length)];
+    $("qimage").src=chosenImage;
+    $("qimage").classList.remove("hidden");
+  }else{
+    $("qimage").removeAttribute("src");
+    $("qimage").classList.add("hidden");
+  }
   $("answer").value="";$("answer").disabled=false;$("answer").classList.remove("correct","wrong");$("feedback").textContent="";$("feedback").className="";
   let old=$("mcOptions"); if(old) old.remove();
   if(x.type==="mc"){
     $("answer").classList.add("hidden");
+    // Multiple-choice answers submit automatically once the required number
+    // has been selected, just like typed-answer questions.
     $("submit").classList.add("hidden");
+    $("submit").disabled=true;
     const box=document.createElement("div"); box.id="mcOptions";
-    buildMCOptions(x).forEach((choice,i)=>{
+    const options=buildMCOptions(x);
+    // The runtime set is the authoritative answer set for this presentation.
+    // Do not derive the required count from the entire question bank/pool.
+    const required=Math.max(1,Number(x.runtimeRequiredCount)||x.runtimeCorrectAnswers.length);
+    const instruction=document.createElement("div");
+    instruction.id="mcInstruction";
+    instruction.className="muted small";
+    instruction.textContent=required>1?`Select ${required} answers.`:"Select one answer.";
+    box.appendChild(instruction);
+
+    options.forEach((choice,i)=>{
       const b=document.createElement("button");
-      b.type="button";b.className="mc-option";b.dataset.choice=choice;
+      b.type="button";b.className="mc-option";b.dataset.choice=choice; b.dataset.selected="false";
       b.textContent=`${String.fromCharCode(65+i)}. ${choice}`;
       b.style.display="block";b.style.width="100%";b.style.textAlign="left";b.style.margin="8px 0";
-      b.onclick=()=>submit(false,choice);
+      b.onclick=()=>{
+        if(b.disabled || waitingForNext)return;
+
+        if(b.dataset.selected==="true"){
+          b.dataset.selected="false";
+          b.classList.remove("selected-choice");
+        }else{
+          b.dataset.selected="true";
+          b.classList.add("selected-choice");
+        }
+
+        const nowSelected=[...box.querySelectorAll(".mc-option[data-selected='true']")];
+
+        // Once the required number has been selected, submit immediately.
+        // Pass the actual selected choices into submit(); previously the hidden
+        // submit button left mcChoice null, which made every MC answer empty.
+        if(nowSelected.length===required){
+          submit(false,nowSelected.map(el=>el.dataset.choice));
+        }
+      };
       box.appendChild(b);
     });
     $("answer").parentNode.insertBefore(box,$("answer"));
   }else{
     $("answer").classList.remove("hidden");
     $("submit").classList.remove("hidden");
+    $("submit").disabled=false;
+    $("submit").textContent="Submit";
     setTimeout(()=>$("answer").focus(),20);
   }
   qStarted=performance.now();
 }
 function submit(skipped=false, mcChoice=null){
   if(idx>=test.length)return;
-  const x=test[idx], user=mcChoice!==null?mcChoice:$("answer").value, ms=performance.now()-qStarted;
+  $("submit").disabled=true;
+  const x=test[idx], ms=performance.now()-qStarted;
+  const isMC=x.type==="mc";
+  const user=isMC ? (Array.isArray(mcChoice)?mcChoice:mcChoice!==null?[mcChoice]:[]) : $("answer").value;
   let ok=false;
   if(!skipped){
-    if(x.type==="mc") ok=user===x.correct;
-    else ok=equivalent(user,x.answers);
+    if(isMC){
+      const selected=[...new Set(user)];
+      const expected=Array.isArray(x.runtimeCorrectAnswers) && x.runtimeCorrectAnswers.length
+        ? x.runtimeCorrectAnswers
+        : correctAnswersFor(x);
+      ok=selected.length===expected.length && selected.every(v=>expected.includes(v));
+    }else{
+      ok=equivalent(user,x.answers);
+    }
   }
   if(ok)correct++;
-  answers.push({question:x.question,user,correct:ok,time:ms/1000});
+  answers.push({question:x.question,user:Array.isArray(user)?user.join(" / "):user,correct:ok,time:ms/1000});
 
   const box=$("mcOptions");
   if(box){
-    [...box.children].forEach(b=>{
+    const expected=Array.isArray(x.runtimeCorrectAnswers) && x.runtimeCorrectAnswers.length
+      ? x.runtimeCorrectAnswers
+      : correctAnswersFor(x);
+    [...box.querySelectorAll(".mc-option")].forEach(b=>{
       b.disabled=true;
-      if(!skipped && b.dataset.choice===user){
-        b.classList.add(ok?"correct-choice":"wrong-choice");
+      const choice=b.dataset.choice;
+      const selected=Array.isArray(user)?user.includes(choice):user===choice;
+      if(!skipped && selected){
+        b.classList.add(expected.includes(choice)?"correct-choice":"wrong-choice");
       }
-      if(!skipped && !ok && showCorrectOnWrong && b.dataset.choice===x.correct){
+      if(!skipped && !ok && showCorrectOnWrong && expected.includes(choice)){
         b.classList.add("correct-choice");
       }
     });
@@ -2035,15 +3037,18 @@ function submit(skipped=false, mcChoice=null){
   }else{
     let text="✗ INCORRECT";
     if(showCorrectOnWrong){
-      const answer=x.type==="mc"?x.correct:(x.answers||[]).join(" / ");
-      text+=` — Correct answer: ${answer}`;
+      const expectedForFeedback=isMC
+        ? (Array.isArray(x.runtimeCorrectAnswers) && x.runtimeCorrectAnswers.length ? x.runtimeCorrectAnswers : correctAnswersFor(x))
+        : (x.answers||[]);
+      const answer=isMC?expectedForFeedback.join(" + "):expectedForFeedback.join(" / ");
+      text+=` — Correct answer${isMC&&expectedForFeedback.length>1?"s":""}: ${answer}`;
     }
     $("feedback").textContent=text;
     $("feedback").className="answer-result wrong";
   }
 
   $("answer").disabled=true;
-  if(x.type!=="mc" && !skipped){
+  if(!isMC && !skipped){
     $("answer").classList.remove("correct","wrong");
     $("answer").classList.add(ok?"correct":"wrong");
   }
@@ -2074,7 +3079,44 @@ function submit(skipped=false, mcChoice=null){
   }
 }
 $("submit").onclick=()=>submit(false);
+
+// Typed answers: once the entered answer exactly matches one of the accepted
+// answers, submit it automatically. Incorrect answers still require the
+// Submit button, so the user can finish composing an answer without being
+// penalized for an intermediate/incorrect string.
+$("answer").oninput=()=>{
+  if($("answer").disabled || $("answer").classList.contains("hidden") || waitingForNext)return;
+  const value=$("answer").value;
+  if(value.trim()==="")return;
+  const x=test[idx];
+  if(!x || x.type==="mc")return;
+  if(equivalent(value,x.answers)) submit(false);
+};
+
 $("skip").onclick=()=>submit(true);
+
+function exitTest(){
+  if(!confirm("Exit this test? Your current progress will be discarded and this test will not be saved to history.")) return;
+  clearInterval(timer);
+  waitingForNext=false;
+  const next=$("nextArrow"); if(next) next.remove();
+  test=[];
+  idx=0;
+  correct=0;
+  answers=[];
+  currentTestMeta=null;
+  currentRunNoSave=false;
+  $("quiz").classList.add("hidden");
+  $("results").classList.add("hidden");
+  $("setup").classList.remove("hidden");
+  $("feedback").textContent="";
+  $("answer").value="";
+  $("answer").disabled=false;
+  const box=$("mcOptions"); if(box) box.remove();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+$("exitTest").onclick=exitTest;
+
 $("answer").onkeydown=e=>{
   if(e.key==="Enter"){
     e.preventDefault();
@@ -2085,7 +3127,34 @@ $("answer").onkeydown=e=>{
   }
 };
 
-function finishTest(){
+function timeoutTest(){
+  if(!test.length)return;
+  clearInterval(timer);
+  waitingForNext=false;
+  const next=$("nextArrow"); if(next) next.remove();
+
+  const unansweredQuestion=test[idx]?.question||"the current question";
+  const completed=answers.length;
+  const total=answers.reduce((s,x)=>s+x.time,0);
+  const avg=answers.length?total/answers.length:0;
+
+  // A timeout is an incomplete run, so do not add it to completed test history.
+  $("quiz").classList.add("hidden");
+  $("results").classList.remove("hidden");
+  $("results").innerHTML=`<h2>Test timed out</h2>
+    <p>The test stopped because <strong>${esc(unansweredQuestion)}</strong> was not answered within the configured timeout.</p>
+    <p><strong>${correct}/${completed}</strong> answered correctly${completed?` · Average response: <strong>${avg.toFixed(2)}s</strong>`:""}</p>
+    <div class="results-actions">
+      <div class="actions results-primary-actions">
+        <button onclick="rerunTemporaryTest()">Rerun This Test</button>
+        <button onclick="document.querySelector('[data-tab=test]').click();$('setup').classList.remove('hidden');$('results').classList.add('hidden');">New Random Test</button>
+      </div>
+      <button class="results-history-button" onclick="openTestHistory('savedHistory');">View Test History</button>
+    </div>`;
+  currentTestMeta=null;
+  currentRunNoSave=false;
+}
+function finishTest(message=""){
   if(!test.length)return;
   clearInterval(timer);
   // Total answer time should only include time spent actually answering
@@ -2095,6 +3164,7 @@ function finishTest(){
   recordCompletedTest();
   $("quiz").classList.add("hidden");$("results").classList.remove("hidden");
   $("results").innerHTML=`<h2>Test complete</h2>
+  ${message?`<p class="muted">${esc(message)}</p>`:""}
   <p><strong>${correct}/${test.length}</strong> correct (${Math.round(correct/test.length*100)}%)</p>
   <p>Total time: <strong>${total.toFixed(2)}s</strong><br>Average response: <strong>${avg.toFixed(2)}s</strong></p>
   <details class="review-details">
@@ -2103,20 +3173,24 @@ function finishTest(){
       answers.map(x=>`<tr><td>${x.correct?"✓":"✗"}</td><td>${esc(x.question)}</td><td>${esc(x.user||"(none)")}</td><td>${x.time.toFixed(2)}s</td></tr>`).join("")
     }</tbody></table>
   </details>
-  <div class="actions">
-    <button onclick="rerunTemporaryTest()">Rerun This Test</button>
-    <button onclick="document.querySelector('[data-tab=test]').click();$('setup').classList.remove('hidden');$('results').classList.add('hidden');">New Random Test</button>
-    <button onclick="openTestHistory('savedHistory');">View Test History</button>
+  <div class="results-actions">
+    <div class="actions results-primary-actions">
+      <button onclick="rerunTemporaryTest()">Rerun This Test</button>
+      <button onclick="document.querySelector('[data-tab=test]').click();$('setup').classList.remove('hidden');$('results').classList.add('hidden');">New Random Test</button>
+    </div>
+    <button class="results-history-button" onclick="openTestHistory('savedHistory');">View Test History</button>
   </div>`;
 }
 
 const CSV_CHOICE_COLUMNS=25;
 const CSV_ANSWER_COLUMNS=10;
+const CSV_CORRECT_COLUMNS=5;
 const csvHeader=[
   "ID","Category","Subcategory","Question","Type","Difficulty","Correct Answer",
+  ...Array.from({length:CSV_CORRECT_COLUMNS-1},(_,i)=>`Correct Answer ${i+2}`),
   ...Array.from({length:CSV_ANSWER_COLUMNS},(_,i)=>`Accepted Answer ${i+1}`),
   ...Array.from({length:CSV_CHOICE_COLUMNS},(_,i)=>`Choice ${i+1}`),
-  "Pool Count","Displayed Choices","All of the Above","None of the Above"
+  "Pool Count","Displayed Choices","Multiple Correct","Minimum Correct","Maximum Correct","All of the Above","None of the Above","Answer Pool ID","Answer Pool Name"
 ];
 
 function csvEscape(value){
@@ -2131,13 +3205,18 @@ function questionsToCsv(list){
     const row=[
       q.id||"",q.category||"",q.subcategory||"",q.question||"",q.type||"typed",
       q.difficulty||"normal",
-      q.correct||answers[0]||"",
+      ...Array.from({length:CSV_CORRECT_COLUMNS},(_,i)=>(q.correctAnswers||[q.correct||answers[0]||""])[i]||""),
       ...Array.from({length:CSV_ANSWER_COLUMNS},(_,i)=>answers[i]||""),
       ...Array.from({length:CSV_CHOICE_COLUMNS},(_,i)=>choices[i]||""),
       q.poolCount||choices.length||0,
       q.displayCount||4,
+      q.multipleCorrect?"true":"false",
+      q.multipleCorrect?(q.minCorrectAnswers||1):1,
+      q.multipleCorrect?(q.maxCorrectAnswers||q.minCorrectAnswers||1):1,
       q.allAbove?"true":"false",
-      q.noneAbove?"true":"false"
+      q.noneAbove?"true":"false",
+      q.answerPoolId||"",
+      q.answerPoolId?getAnswerPoolById(q.answerPoolId)?.name||"": ""
     ];
     lines.push(row.map(csvEscape).join(","));
   }
@@ -2211,16 +3290,27 @@ function csvRowsToQuestions(text){
         const c=get(row,`Choice ${i}`);
         if(c&&!choices.includes(c))choices.push(c);
       }
-      const correct=get(row,"Correct Answer");
-      if(!choices.length||!correct)throw new Error(`Row ${ri+2} needs choices and a Correct Answer.`);
-      if(!choices.includes(correct)&&correct!=="All of the above"&&correct!=="None of the above"){
-        throw new Error(`Row ${ri+2}: Correct Answer must match a choice.`);
+      const corrects=[];
+      for(let i=1;i<=CSV_CORRECT_COLUMNS;i++){
+        const c=get(row,i===1?"Correct Answer":`Correct Answer ${i}`);
+        if(c&&!corrects.includes(c))corrects.push(c);
+      }
+      if(!choices.length||!corrects.length)throw new Error(`Row ${ri+2} needs choices and at least one Correct Answer.`);
+      for(const correct of corrects){
+        if(!choices.includes(correct)&&correct!=="All of the above"&&correct!=="None of the above"){
+          throw new Error(`Row ${ri+2}: Correct Answer must match a choice.`);
+        }
       }
       const poolCount=Math.min(25,Math.max(2,parseInt(get(row,"Pool Count"),10)||choices.length));
       const displayCount=Math.min(poolCount,Math.max(2,parseInt(get(row,"Displayed Choices"),10)||4));
+      const multipleCorrect=/^(true|yes|1)$/i.test(get(row,"Multiple Correct")) || corrects.length>1;
+      const minCorrect=multipleCorrect ? Math.max(1,Math.min(corrects.length,displayCount,parseInt(get(row,"Minimum Correct"),10)||1)) : 1;
+      const maxCorrect=multipleCorrect ? Math.max(minCorrect,Math.min(corrects.length,displayCount,parseInt(get(row,"Maximum Correct"),10)||minCorrect)) : 1;
       out.push({
         id,category,subcategory:get(row,"Subcategory"),question,type:"mc",difficulty,
-        choices,correct,poolCount,displayCount,
+        choices,correct:corrects[0],correctAnswers:corrects,poolCount,displayCount,
+        multipleCorrect,minCorrectAnswers:minCorrect,maxCorrectAnswers:maxCorrect,
+        answerPoolId:get(row,"Answer Pool ID")||null,
         allAbove:/^(true|yes|1)$/i.test(get(row,"All of the Above")),
         noneAbove:/^(true|yes|1)$/i.test(get(row,"None of the Above"))
       });
@@ -2244,6 +3334,37 @@ function sheetStatus(msg,ok=true){
 }
 $("sheetBridgeUrl").value=localStorage.getItem(SHEET_BRIDGE_KEY)||"";
 
+function getSyncState(){
+  return {
+    questions:bank,
+    answerPools,
+    testHistory,
+    testSettings,
+    customTests,
+    customCategories,
+    exportedAt:new Date().toISOString(),
+    schemaVersion:2
+  };
+}
+function applySyncState(d){
+  if(Array.isArray(d.questions)) bank=d.questions.map(q=>({...q,updatedAt:Number(q.updatedAt)||Date.now()}));
+  if(Array.isArray(d.answerPools)) answerPools=d.answerPools;
+  if(Array.isArray(d.testHistory)) testHistory=d.testHistory;
+  if(d.testSettings && typeof d.testSettings==="object") testSettings=Object.assign({maxRandomHistory:10},d.testSettings);
+  if(Array.isArray(d.customTests)) customTests=d.customTests;
+  if(Array.isArray(d.customCategories)) customCategories=d.customCategories;
+  syncTombstones={};
+  localStorage.setItem(KEY,JSON.stringify(bank));
+  localStorage.setItem(ANSWER_POOL_KEY,JSON.stringify(answerPools));
+  localStorage.setItem(TEST_HISTORY_KEY,JSON.stringify(testHistory));
+  localStorage.setItem(TEST_SETTINGS_KEY,JSON.stringify(testSettings));
+  localStorage.setItem(CUSTOM_TEST_KEY,JSON.stringify(customTests));
+  localStorage.setItem(CATEGORY_KEY,JSON.stringify(customCategories));
+  refreshAnswerPoolSelect();
+  renderAnswerPoolList();
+  renderPoolCombineList();
+  updateUI();
+}
 async function sheetBridgeRequest(method,body=null){
   const url=$("sheetBridgeUrl").value.trim();
   if(!url)throw new Error("Enter your Google Apps Script /exec URL first.");
@@ -2258,7 +3379,7 @@ async function sheetBridgeRequest(method,body=null){
   const r=await fetch(url,{
     method:"POST",redirect:"follow",
     headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body:JSON.stringify({action:"replace",questions:bank})
+    body:JSON.stringify({action:"replace",...getSyncState()})
   });
   if(!r.ok)throw new Error("Google Sheets bridge returned HTTP "+r.status+".");
   return r.json();
@@ -2268,7 +3389,7 @@ $("sheetTest").onclick=async()=>{
     sheetStatus("Testing…");
     const d=await sheetBridgeRequest("GET");
     if(!d||d.ok!==true)throw new Error(d?.error||"The bridge did not return a valid response.");
-    sheetStatus(`Connected. Google Sheet contains ${Array.isArray(d.questions)?d.questions.length:0} questions.`);
+    sheetStatus(`Connected. Google Sheet contains ${Array.isArray(d.questions)?d.questions.length:0} questions, ${Array.isArray(d.answerPools)?d.answerPools.length:0} answer pools, and ${Array.isArray(d.testHistory)?d.testHistory.length:0} test-history records.`);
   }catch(e){sheetStatus(e.message||"Connection failed.",false);}
 };
 $("sheetPull").onclick=async()=>{
@@ -2278,12 +3399,8 @@ $("sheetPull").onclick=async()=>{
     const d=await sheetBridgeRequest("GET");
     if(d?.ok!==true)throw new Error(d?.error||"Invalid bridge response.");
     if(!Array.isArray(d.questions))throw new Error("The bridge returned no question list.");
-    bank=d.questions.map(q=>({...q,updatedAt:Number(q.updatedAt)||Date.now()}));
-    syncTombstones={};
-    customCategories=[...new Set([...customCategories,...bank.map(q=>q.category).filter(Boolean)])].sort((a,b)=>a.localeCompare(b));
-    localStorage.setItem(CATEGORY_KEY,JSON.stringify(customCategories));
-    saveBank();
-    sheetStatus(`Pulled ${bank.length} questions from Google Sheets.`);
+    applySyncState(d);
+    sheetStatus(`Pulled ${bank.length} questions, ${answerPools.length} answer pools, and ${testHistory.length} test-history records from Google Sheets.`);
   }catch(e){sheetStatus(e.message||"Pull failed.",false);}
 };
 $("sheetPush").onclick=async()=>{
@@ -2292,7 +3409,7 @@ $("sheetPush").onclick=async()=>{
     sheetStatus("Pushing…");
     const d=await sheetBridgeRequest("POST");
     if(d?.ok!==true)throw new Error(d?.error||"Invalid bridge response.");
-    sheetStatus(`Pushed ${bank.length} questions to Google Sheets.`);
+    sheetStatus(`Pushed ${bank.length} questions, ${answerPools.length} answer pools, ${testHistory.length} test-history records, and saved-test data to Google Sheets.`);
   }catch(e){sheetStatus(e.message||"Push failed.",false);}
 };
 
@@ -2381,6 +3498,10 @@ $("clearAll").onclick=()=>{
 $("manualNext").onchange=()=>{
   $("transitionTime").disabled=$("manualNext").checked;
 };
+$("questionTimeout").oninput=()=>{
+  const n=Math.min(15,Math.max(0,+$("questionTimeout").value||0));
+  $("questionTimeout").value=n;
+};
 
 $("selectCustomQuestions").onchange=()=>{
   setCustomQuestionMode($("selectCustomQuestions").checked);
@@ -2388,11 +3509,44 @@ $("selectCustomQuestions").onchange=()=>{
 $("customQuestionSearch").oninput=renderCustomQuestionPicker;
 $("testCategory").onchange=()=>{
   refreshSubcategoryControls(true);
+  updateTestSelectionStatus();
   if(customQuestionMode) renderCustomQuestionPicker();
 };
 $("testSubcategory").onchange=()=>{
+  updateTestSelectionStatus();
   if(customQuestionMode) renderCustomQuestionPicker();
 };
+
+function selectAllTestCategories(){
+  [...$("testCategory").options].forEach(o=>o.selected=true);
+  refreshSubcategoryControls(true);
+  updateTestSelectionStatus();
+  if(customQuestionMode) renderCustomQuestionPicker();
+}
+
+function clearTestCategories(){
+  [...$("testCategory").options].forEach(o=>o.selected=false);
+  refreshSubcategoryControls(true);
+  updateTestSelectionStatus();
+  if(customQuestionMode) renderCustomQuestionPicker();
+}
+
+function selectAllTestSubcategories(){
+  [...$("testSubcategory").options].forEach(o=>o.selected=true);
+  updateTestSelectionStatus();
+  if(customQuestionMode) renderCustomQuestionPicker();
+}
+
+function clearTestSubcategories(){
+  [...$("testSubcategory").options].forEach(o=>o.selected=false);
+  updateTestSelectionStatus();
+  if(customQuestionMode) renderCustomQuestionPicker();
+}
+
+$("selectAllCategories").onclick=selectAllTestCategories;
+$("clearCategories").onclick=clearTestCategories;
+$("selectAllSubcategories").onclick=selectAllTestSubcategories;
+$("clearSubcategories").onclick=clearTestSubcategories;
 $("cat").onchange=refreshSubcategorySuggestions;
 $("cancelTestEdit").onclick=()=>cancelCustomTestEdit();
 document.addEventListener("click",e=>{
