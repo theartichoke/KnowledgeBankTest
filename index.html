@@ -365,6 +365,8 @@
     .history-setting-tag { font-size:.72rem; }
     .run-count { width:100% !important; }
   }
+  .sync-advanced{margin-top:12px;}
+  .sync-advanced summary{cursor:pointer;user-select:none;}
 </style>
 <style>
 .pool-editor-grid{align-items:start;}
@@ -743,8 +745,16 @@
         <button id="sheetPull">Pull From Google Sheet</button>
         <button id="sheetPush">Push Local Questions to Google Sheet</button>
       </div>
+      <details class="sync-advanced">
+        <summary>Advanced Sync</summary>
+        <div class="actions" style="margin-top:10px;">
+          <button id="sheetForcePush">Force Full Update</button>
+        </div>
+        <p class="muted small">Replaces the Google Sheet's question data with the app's complete current local data, including images. This ignores the incremental change tracker. Use this when you intentionally want to rebuild the sheet from the browser copy.</p>
+      </details>
       <p id="sheetSyncStatus" class="muted small">Not configured.</p>
-      <p class="muted small"><strong>Important:</strong> Pull replaces the app's local question bank with the sheet after confirmation. Push replaces the sheet's question rows with the app's current bank. Your JSON/CSV backups remain separate.</p>
+      <p id="sheetBridgeVersion" class="muted small">Bridge version: not checked yet.</p>
+      <p class="muted small"><strong>Important:</strong> Pull replaces the app's local question bank with the sheet after confirmation. The first Push is a full sync; later Pushes send only changed/new questions and deletions. Images are stored separately in small chunks. Your JSON/CSV backups remain separate.</p>
     </div>
   </div>
 
@@ -764,6 +774,7 @@
   <div class="sync-subpanel hidden" id="syncHelpPanel">
     <div class="card">
       <h3>Google Sheets setup</h3>
+      <p class="muted small"><strong>Compatibility:</strong> This app is <code>2026.08.23.3</code> and requires bridge protocol <code>KS-SYNC-4</code>. The Test Connection button checks the installed bridge version before syncing.</p>
       <ol>
         <li>Create a Google Sheet that you want to use as the master question bank.</li>
         <li>Open <strong>Extensions → Apps Script</strong>.</li>
@@ -905,7 +916,11 @@ const CUSTOM_TEST_KEY="knowledge-speedrun-custom-tests-v1";
 let customTests=JSON.parse(localStorage.getItem(CUSTOM_TEST_KEY)||"[]");
 
 const $=id=>document.getElementById(id);
-function saveBank(){localStorage.setItem(KEY,JSON.stringify(bank)); updateUI();}
+function saveBank(){
+  trackQuestionChanges();
+  localStorage.setItem(KEY,JSON.stringify(bank));
+  updateUI();
+}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 function saveAnswerPools(){
   localStorage.setItem(ANSWER_POOL_KEY,JSON.stringify(answerPools));
@@ -2605,7 +2620,7 @@ $("save").onclick=()=>{
   const difficulty=$("difficulty").value||"normal";
   if(!question){$("saveMsg").textContent="Need a question.";return;}
 
-  let item={id:editingQuestionId||crypto.randomUUID(),category,subcategory,question,type,difficulty,image:""};
+  let item={id:editingQuestionId||crypto.randomUUID(),category,subcategory,question,type,difficulty,image:"",updatedAt:Date.now()};
 
   if(type==="typed"){
     const answers=$("a").value.split("\\n").map(x=>x.trim()).filter(Boolean);
@@ -3328,7 +3343,97 @@ function downloadText(filename,text,type){
 
 
 /* ---------- Google Sheets bridge sync ---------- */
+const APP_VERSION="2026.08.23.3";
+const SYNC_PROTOCOL_ID="KS-SYNC-4";
+const REQUIRED_BRIDGE_COMPAT="KS-SYNC-4";
 const SHEET_BRIDGE_KEY="knowledge-speedrun-sheet-bridge-url-v1";
+const SYNC_BASELINE_KEY="knowledge-speedrun-sync-baseline-v1";
+const SYNC_DIRTY_KEY="knowledge-speedrun-sync-dirty-v1";
+const SYNC_DELETED_KEY="knowledge-speedrun-sync-deleted-v1";
+
+let syncBaseline=JSON.parse(localStorage.getItem(SYNC_BASELINE_KEY)||"null");
+let syncDirtyIds=new Set(JSON.parse(localStorage.getItem(SYNC_DIRTY_KEY)||"[]"));
+let syncDeletedIds=new Set(JSON.parse(localStorage.getItem(SYNC_DELETED_KEY)||"[]"));
+
+function persistSyncTracking(){
+  localStorage.setItem(SYNC_BASELINE_KEY,JSON.stringify(syncBaseline));
+  localStorage.setItem(SYNC_DIRTY_KEY,JSON.stringify([...syncDirtyIds]));
+  localStorage.setItem(SYNC_DELETED_KEY,JSON.stringify([...syncDeletedIds]));
+}
+
+function currentQuestionVersions(){
+  const out={};
+  for(const q of bank){
+    if(q?.id) out[q.id]=Number(q.updatedAt)||0;
+  }
+  return out;
+}
+
+function trackQuestionChanges(){
+  // Before the first successful full push/pull there is no safe baseline,
+  // so the first push remains a complete replacement.
+  if(!syncBaseline)return;
+
+  const current=currentQuestionVersions();
+  for(const id of Object.keys(current)){
+    if(syncBaseline[id]===undefined || Number(syncBaseline[id])!==Number(current[id])){
+      syncDirtyIds.add(id);
+      syncDeletedIds.delete(id);
+    }
+  }
+
+  for(const id of Object.keys(syncBaseline)){
+    if(current[id]===undefined){
+      syncDeletedIds.add(id);
+      syncDirtyIds.delete(id);
+    }
+  }
+
+  persistSyncTracking();
+}
+
+function markSyncBaseline(){
+  syncBaseline=currentQuestionVersions();
+  syncDirtyIds.clear();
+  syncDeletedIds.clear();
+  persistSyncTracking();
+}
+
+function syncChangeCount(){
+  return syncDirtyIds.size+syncDeletedIds.size;
+}
+
+function setBridgeVersionStatus(d){
+  const e=$("sheetBridgeVersion");
+  if(!e)return;
+  const bridgeVersion=d?.bridgeVersion||"unknown";
+  const protocol=d?.syncProtocolId||"unknown";
+  if(d && d.syncProtocolId && protocol!==REQUIRED_BRIDGE_COMPAT){
+    e.textContent=`Bridge ${bridgeVersion} — INCOMPATIBLE (bridge protocol ${protocol}; app requires ${REQUIRED_BRIDGE_COMPAT}).`;
+    e.className="muted small sync-status-error";
+  }else if(d && d.bridgeVersion){
+    e.textContent=`App ${APP_VERSION} • Bridge ${bridgeVersion} • Protocol ${protocol}`;
+    e.className="muted small";
+  }else{
+    e.textContent="Bridge version: not available.";
+    e.className="muted small sync-status-error";
+  }
+}
+
+function bridgeError_(d,fallback){
+  const base=d?.error||fallback;
+  const version=d?.bridgeVersion?` Bridge version: ${d.bridgeVersion}.`:"";
+  const protocol=d?.syncProtocolId?` Bridge protocol: ${d.syncProtocolId}.`:"";
+  return base+version+protocol;
+}
+
+function ensureBridgeCompatible_(d){
+  setBridgeVersionStatus(d);
+  if(d?.syncProtocolId && d.syncProtocolId!==REQUIRED_BRIDGE_COMPAT){
+    throw new Error(`Incompatible Google Sheets bridge. App requires ${REQUIRED_BRIDGE_COMPAT}, but the bridge reports ${d.syncProtocolId}. Bridge version: ${d.bridgeVersion||"unknown"}.`);
+  }
+}
+
 function sheetStatus(msg,ok=true){
   const e=$("sheetSyncStatus"); if(e){e.textContent=msg;e.className=ok?"muted small":"muted small sync-status-error";}
 }
@@ -3353,7 +3458,7 @@ function applySyncState(d){
   if(d.testSettings && typeof d.testSettings==="object") testSettings=Object.assign({maxRandomHistory:10},d.testSettings);
   if(Array.isArray(d.customTests)) customTests=d.customTests;
   if(Array.isArray(d.customCategories)) customCategories=d.customCategories;
-  syncTombstones={};
+  markSyncBaseline();
   localStorage.setItem(KEY,JSON.stringify(bank));
   localStorage.setItem(ANSWER_POOL_KEY,JSON.stringify(answerPools));
   localStorage.setItem(TEST_HISTORY_KEY,JSON.stringify(testHistory));
@@ -3373,13 +3478,22 @@ async function sheetBridgeRequest(method,body=null){
     const r=await fetch(url+"?action=get",{
       method:"GET",redirect:"follow",cache:"no-store"
     });
-    if(!r.ok)throw new Error("Google Sheets bridge returned HTTP "+r.status+".");
-    return r.json();
+    const text=await r.text();
+    let data=null;
+    try{ data=JSON.parse(text); }catch(_){}
+    if(!r.ok){
+      if(data)return data;
+      throw new Error(`Google Sheets bridge returned HTTP ${r.status}. The bridge did not return structured error information. App ${APP_VERSION}.`);
+    }
+    if(!data){
+      throw new Error(`Google Sheets bridge returned a non-JSON response. App ${APP_VERSION}. This is a bridge operation/deployment error, not automatically a version mismatch.`);
+    }
+    return data;
   }
   const r=await fetch(url,{
     method:"POST",redirect:"follow",
     headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body:JSON.stringify({action:"replace",...getSyncState()})
+    body:JSON.stringify(body||{action:"replace",...getSyncState()})
   });
   if(!r.ok)throw new Error("Google Sheets bridge returned HTTP "+r.status+".");
   return r.json();
@@ -3388,8 +3502,10 @@ $("sheetTest").onclick=async()=>{
   try{
     sheetStatus("Testing…");
     const d=await sheetBridgeRequest("GET");
-    if(!d||d.ok!==true)throw new Error(d?.error||"The bridge did not return a valid response.");
-    sheetStatus(`Connected. Google Sheet contains ${Array.isArray(d.questions)?d.questions.length:0} questions, ${Array.isArray(d.answerPools)?d.answerPools.length:0} answer pools, and ${Array.isArray(d.testHistory)?d.testHistory.length:0} test-history records.`);
+    if(!d)throw new Error("The bridge returned no response.");
+    ensureBridgeCompatible_(d);
+    if(d.ok!==true)throw new Error(bridgeError_(d,"The bridge did not return a valid response."));
+    sheetStatus(`Connected. Bridge ${d.bridgeVersion||"unknown"} / ${d.syncProtocolId||"unknown"}. Google Sheet contains ${Array.isArray(d.questions)?d.questions.length:0} questions, ${Array.isArray(d.answerPools)?d.answerPools.length:0} answer pools, and ${Array.isArray(d.testHistory)?d.testHistory.length:0} test-history records.`);
   }catch(e){sheetStatus(e.message||"Connection failed.",false);}
 };
 $("sheetPull").onclick=async()=>{
@@ -3397,19 +3513,67 @@ $("sheetPull").onclick=async()=>{
     if(!confirm("Pulling will replace the app's local question bank with the Google Sheet copy. Continue?"))return;
     sheetStatus("Pulling…");
     const d=await sheetBridgeRequest("GET");
-    if(d?.ok!==true)throw new Error(d?.error||"Invalid bridge response.");
-    if(!Array.isArray(d.questions))throw new Error("The bridge returned no question list.");
+    if(!d)throw new Error("The bridge returned no response.");
+    ensureBridgeCompatible_(d);
+    if(d?.ok!==true)throw new Error(bridgeError_(d,"Invalid bridge response."));
+    if(!Array.isArray(d.questions))throw new Error(bridgeError_(d,"The bridge returned no question list."));
     applySyncState(d);
     sheetStatus(`Pulled ${bank.length} questions, ${answerPools.length} answer pools, and ${testHistory.length} test-history records from Google Sheets.`);
   }catch(e){sheetStatus(e.message||"Pull failed.",false);}
 };
+$("sheetForcePush").onclick=async()=>{
+  try{
+    if(!bank.length){
+      if(!confirm("The local question bank is empty. Forcing a full update will replace the Google Sheet question data with an empty bank. Continue?"))return;
+    }else if(!confirm(`FORCE FULL UPDATE\n\nThis will replace the Google Sheet question data with all ${bank.length} local questions, including their images.\n\nThis bypasses incremental sync and does not preserve sheet-only questions. Continue?`))return;
+
+    sheetStatus("Forcing full update…");
+    const d=await sheetBridgeRequest("POST",{action:"replace",...getSyncState()});
+    if(d)ensureBridgeCompatible_(d);
+    if(d?.ok!==true)throw new Error(bridgeError_(d,"Full update failed."));
+    markSyncBaseline();
+    sheetStatus(`Forced full update complete: ${bank.length} questions uploaded. Bridge ${d.bridgeVersion||"unknown"}.`);
+  }catch(e){
+    sheetStatus(e.message||"Forced full update failed.",false);
+  }
+};
 $("sheetPush").onclick=async()=>{
   try{
-    if(!confirm("Push will replace the Google Sheet's question rows with this app's current question bank. Continue?"))return;
-    sheetStatus("Pushing…");
-    const d=await sheetBridgeRequest("POST");
-    if(d?.ok!==true)throw new Error(d?.error||"Invalid bridge response.");
-    sheetStatus(`Pushed ${bank.length} questions, ${answerPools.length} answer pools, ${testHistory.length} test-history records, and saved-test data to Google Sheets.`);
+    const changes=syncChangeCount();
+    const fullPush=!syncBaseline;
+
+    if(fullPush){
+      if(!confirm("This is the first push from this browser, so the complete local question bank will be uploaded to Google Sheets. Continue?"))return;
+      sheetStatus("Pushing full question bank…");
+      const d=await sheetBridgeRequest("POST",{action:"replace",...getSyncState()});
+      if(d)ensureBridgeCompatible_(d);
+      if(d?.ok!==true)throw new Error(bridgeError_(d,"Invalid bridge response."));
+      markSyncBaseline();
+      sheetStatus(`Initial push complete: ${bank.length} questions uploaded. Bridge ${d.bridgeVersion||"unknown"}.`);
+      return;
+    }
+
+    if(!changes){
+      sheetStatus("Google Sheet is already up to date.");
+      return;
+    }
+
+    const dirtyQuestions=bank.filter(q=>q?.id && syncDirtyIds.has(q.id));
+    const deletedIds=[...syncDeletedIds];
+
+    if(!confirm(`Push ${dirtyQuestions.length} changed/new question${dirtyQuestions.length===1?"":"s"} and ${deletedIds.length} deletion${deletedIds.length===1?"":"s"} to Google Sheets?\n\nUnchanged questions and their images will not be uploaded again.`))return;
+
+    sheetStatus(`Pushing ${dirtyQuestions.length} changed question${dirtyQuestions.length===1?"":"s"}…`);
+    const d=await sheetBridgeRequest("POST",{
+      action:"delta",
+      upserts:dirtyQuestions,
+      deletedIds
+    });
+    if(d)ensureBridgeCompatible_(d);
+    if(d?.ok!==true)throw new Error(bridgeError_(d,"Invalid bridge response."));
+
+    markSyncBaseline();
+    sheetStatus(`Incremental push complete: ${dirtyQuestions.length} changed/new question${dirtyQuestions.length===1?"":"s"} and ${deletedIds.length} deletion${deletedIds.length===1?"":"s"} synced. Bridge ${d.bridgeVersion||"unknown"}.`);
   }catch(e){sheetStatus(e.message||"Push failed.",false);}
 };
 
@@ -3432,7 +3596,7 @@ $("importCsvFile2").onchange=e=>{
       const incoming=csvRowsToQuestions(reader.result);
       const byId=new Map(bank.map(q=>[q.id,q]));
       let added=0,updated=0;
-      for(const q of incoming){if(byId.has(q.id))updated++;else added++;byId.set(q.id,q);}
+      for(const q of incoming){if(byId.has(q.id))updated++;else added++;byId.set(q.id,{...q,updatedAt:Date.now()});}
       if(!confirm(`CSV contains ${incoming.length} questions: ${added} new, ${updated} updated.\n\nImport them? Existing questions with matching IDs will be updated; other local questions will be preserved.`))return;
       bank=[...byId.values()];saveBank();
       alert(`Imported successfully.\n${added} new\n${updated} updated`);
@@ -3453,7 +3617,7 @@ $("importFile").onchange=e=>{
     try{
       const incoming=JSON.parse(r.result);
       if(!Array.isArray(incoming))throw Error();
-      bank=[...bank,...incoming];saveBank();alert(`Imported ${incoming.length} questions.`);
+      bank=[...bank,...incoming.map(q=>({...q,updatedAt:Date.now()}))];saveBank();alert(`Imported ${incoming.length} questions.`);
     }catch{alert("That doesn't look like a valid backup.");}
   };r.readAsText(f);
 };
