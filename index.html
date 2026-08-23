@@ -379,6 +379,13 @@
 @media (max-width:800px){.pool-editor-grid{grid-template-columns:1fr;}}
 </style>
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#171717">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Knowledge Speedrun">
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 <div class="wrap">
@@ -3343,7 +3350,7 @@ function downloadText(filename,text,type){
 
 
 /* ---------- Google Sheets bridge sync ---------- */
-const APP_VERSION="2026.08.23.3";
+const APP_VERSION="2026.08.23.4";
 const SYNC_PROTOCOL_ID="KS-SYNC-4";
 const REQUIRED_BRIDGE_COMPAT="KS-SYNC-4";
 const SHEET_BRIDGE_KEY="knowledge-speedrun-sheet-bridge-url-v1";
@@ -3747,6 +3754,48 @@ $("saveTestSettings").onclick=()=>{
 $("transitionTime").disabled=$("manualNext").checked;
 
 updateUI();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js", {scope:"./"})
+      .then(reg => {
+        if (reg.waiting) {
+          window.dispatchEvent(new CustomEvent("knowledge-speedrun-update-ready"));
+        }
+        reg.addEventListener("updatefound", () => {
+          const worker = reg.installing;
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              window.dispatchEvent(new CustomEvent("knowledge-speedrun-update-ready"));
+            }
+          });
+        });
+      })
+      .catch(err => console.warn("Knowledge Speedrun offline cache unavailable:", err));
+  });
+}
+</script>
+<div id="pwaUpdateNotice" class="hidden" style="position:fixed;left:12px;right:12px;bottom:12px;z-index:10000;padding:12px 14px;background:#202020;border:1px solid #555;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.45);">
+  <span>Knowledge Speedrun has an update ready.</span>
+  <button id="pwaUpdateButton" type="button" style="margin-left:10px;">Reload</button>
+</div>
+<script>
+window.addEventListener("knowledge-speedrun-update-ready", () => {
+  const notice=document.getElementById("pwaUpdateNotice");
+  if(!notice)return;
+  notice.classList.remove("hidden");
+  const button=document.getElementById("pwaUpdateButton");
+  button.onclick=async()=>{
+    try {
+      const reg=await navigator.serviceWorker.getRegistration("./");
+      if(reg?.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
+    } finally {
+      window.location.reload();
+    }
+  };
+});
 </script>
 </body>
 </html>
