@@ -786,6 +786,42 @@
 }
 .supa-confirmation-info strong{display:block;margin-bottom:4px;color:#dbeefa;}
 #supaRedirectDisplay{word-break:break-all;color:#9fc7ff;}
+
+.local-storage-card{border-color:#34434d;}
+.storage-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0 12px;}
+.storage-stat{padding:10px 12px;border:1px solid #333;border-radius:8px;background:#16191b;}
+.storage-stat .storage-label{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:4px;}
+.storage-stat .storage-value{font-size:1.05rem;font-weight:700;color:#e7e7e7;}
+.storage-progress{height:10px;border:1px solid #3a3a3a;border-radius:999px;background:#111;overflow:hidden;margin:8px 0 5px;}
+.storage-progress-fill{height:100%;width:0%;background:#6fa8dc;transition:width .2s ease;}
+.storage-note{font-size:.78rem;color:#888;}
+
+.storage-warning{
+  margin-top:8px;
+  padding:9px 11px;
+  border:1px solid #8a7040;
+  border-radius:8px;
+  background:#2a2418;
+  color:#e2c98f;
+  font-size:.82rem;
+  font-weight:700;
+}
+.storage-warning.storage-critical{
+  border-color:#7a4747;
+  background:#291c1c;
+  color:#d9a0a0;
+}
+
+.setup-guide{border:1px solid #333;border-radius:10px;padding:14px;margin-top:12px;background:#151718;}
+.setup-guide h4{margin:0 0 8px;}
+.setup-guide ol{margin:8px 0 8px 22px;padding:0;}
+.setup-guide li{margin:7px 0;line-height:1.45;}
+.setup-code-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+.setup-note{padding:9px 11px;border-left:3px solid #567a92;background:#172027;border-radius:4px;margin:10px 0;font-size:.84rem;}
+.setup-warning{padding:9px 11px;border-left:3px solid #8a7040;background:#292319;border-radius:4px;margin:10px 0;font-size:.84rem;}
+.setup-link{color:#9fc7ff;}
+.connection-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:700px){.connection-grid{grid-template-columns:1fr;}}
 </style>
 <style>
 .pool-editor-grid{align-items:start;}
@@ -1150,6 +1186,35 @@
     </div>
   </div>
 
+  <div class="card local-storage-card">
+    <h3>Local Device Storage</h3>
+    <p class="muted small">Knowledge Speedrun keeps a complete local/offline copy. Unused image records are automatically garbage-collected when the bank is persisted, and you can run a manual cleanup here.</p>
+    <div class="storage-stat-grid">
+      <div class="storage-stat">
+        <div class="storage-label">Cached question images</div>
+        <div id="localImageStorageValue" class="storage-value">Checking…</div>
+      </div>
+      <div class="storage-stat">
+        <div class="storage-label">Browser storage used</div>
+        <div id="localBrowserStorageValue" class="storage-value">Checking…</div>
+      </div>
+      <div class="storage-stat">
+        <div class="storage-label">Browser storage quota</div>
+        <div id="localBrowserQuotaValue" class="storage-value">Checking…</div>
+      </div>
+    </div>
+    <div id="localStorageProgress" class="storage-progress">
+      <div id="localStorageProgressFill" class="storage-progress-fill"></div>
+    </div>
+    <div id="localStorageProgressText" class="storage-note">Checking browser storage…</div>
+    <div id="localStorageWarning" class="storage-warning hidden"></div>
+    <div class="actions">
+      <button id="cleanLocalStorage" type="button">Clean Local Storage</button>
+      <button id="refreshLocalStorage" type="button">Refresh Storage Info</button>
+    </div>
+    <p id="localStorageCleanupStatus" class="muted small sync-neutral">No cleanup run yet.</p>
+  </div>
+
   <div class="sync-subpanel" id="syncGooglePanel">
     <div class="card">
       <h3>Google Sheets</h3>
@@ -1162,6 +1227,7 @@
         <button id="sheetPull">Pull From Google Sheet</button>
         <button id="sheetPush">Push Local Questions to Google Sheet</button>
       </div>
+      <div id="googleImageLimitWarning" class="storage-warning storage-critical hidden"></div>
       <details class="sync-advanced">
         <summary>Advanced Sync</summary>
         <div class="actions" style="margin-top:10px;">
@@ -1184,7 +1250,25 @@
     <div class="card">
       <h3>Supabase</h3>
       <p class="muted small">A separate cloud backend using a real Postgres database and private image storage. Google Sheets is not modified when you use these controls.</p>
-      <div class="sync-backend-badge">KnowledgeBankTest • private per-user storage</div>
+      <details class="sync-advanced" open>
+        <summary>Supabase Connection</summary>
+        <div class="connection-grid" style="margin-top:10px;">
+          <div>
+            <label for="supaProjectUrl">Project URL</label>
+            <input id="supaProjectUrl" type="url" autocomplete="off" placeholder="https://your-project-ref.supabase.co">
+          </div>
+          <div>
+            <label for="supaPublishableKey">Publishable key</label>
+            <input id="supaPublishableKey" type="text" autocomplete="off" spellcheck="false" placeholder="sb_publishable_...">
+          </div>
+        </div>
+        <div class="actions">
+          <button id="supaSaveConnection" type="button">Save Supabase Connection</button>
+        </div>
+        <p class="muted small">Use the <strong>publishable</strong> key only. Never put a Supabase secret/service-role key into this app.</p>
+      </details>
+      <div id="supaProjectBadge" class="sync-backend-badge">Supabase project: not configured</div>
+      <p id="supaLastContact" class="muted small">Supabase last contacted: never on this device.</p>
       <form id="supaAuthForm" autocomplete="on" onsubmit="return false;">
         <div class="quick-settings-grid" style="margin-top:12px;">
           <div>
@@ -1238,6 +1322,45 @@
         <button id="supaPull">Pull From Supabase</button>
         <button id="supaPush">Push Local Changes to Supabase</button>
       </div>
+      <div class="supa-storage-meter" style="margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;">
+          <strong>Supabase Cloud Data</strong>
+          <span id="supaStorageValue" class="muted small">Checking…</span>
+        </div>
+
+        <div class="storage-stat-grid" style="margin-top:10px;">
+          <div class="storage-stat">
+            <div class="storage-label">Database</div>
+            <div id="supaDatabaseStorageValue" class="storage-value">Checking…</div>
+          </div>
+          <div class="storage-stat">
+            <div class="storage-label">File Storage</div>
+            <div id="supaImageStorageValue" class="storage-value">Checking…</div>
+          </div>
+        </div>
+
+        <div class="storage-note"><strong>Database quota</strong></div>
+        <div class="storage-progress" title="Supabase database quota used by Knowledge Speedrun">
+          <div id="supaDatabaseProgressFill" class="storage-progress-fill"></div>
+        </div>
+        <div id="supaDatabaseProgressText" class="storage-note">Checking database usage…</div>
+        <div id="supaDatabaseWarning" class="storage-warning hidden"></div>
+
+        <div class="storage-note" style="margin-top:12px;"><strong>File-storage quota</strong></div>
+        <div class="storage-progress" title="Supabase file-storage quota used by Knowledge Speedrun images">
+          <div id="supaStorageProgressFill" class="storage-progress-fill"></div>
+        </div>
+        <div id="supaStorageProgressText" class="storage-note">Checking file-storage usage…</div>
+        <div id="supaFileWarning" class="storage-warning hidden"></div>
+
+        <p class="muted small" style="margin-top:8px;">
+          Free plan: 500 MB database + 1 GB file storage. These are separate allowances; question data does not consume the image/file quota.
+        </p>
+
+        <div class="actions" style="margin-top:8px;">
+          <button id="supaRefreshStorage" type="button">Refresh Supabase Storage</button>
+        </div>
+      </div>
       <details class="sync-advanced">
         <summary>Advanced Sync</summary>
         <div class="actions" style="margin-top:10px;"><button id="supaForcePush">Force Full Update</button></div>
@@ -1250,43 +1373,97 @@
 
   <div class="sync-subpanel hidden" id="syncCsvPanel">
     <div class="card">
-      <h3>Manual CSV Backup</h3>
-      <p class="muted small">This is the fallback that does not depend on Google, Apps Script, or an internet connection. Export the question bank, edit it in Google Sheets/Excel, then import the edited CSV.</p>
+      <h3>Full Portable Backup (ZIP)</h3>
+      <p class="muted small">Recommended backup. The ZIP contains one complete data CSV plus an <code>images/</code> folder containing every referenced image. It can restore the entire local bank, including staged questions and auxiliary app data.</p>
+      <div class="actions">
+        <button id="downloadFullZip" type="button">Download Full Backup (.zip)</button>
+        <button id="uploadFullZip" type="button">Upload / Restore Backup (.zip)</button>
+        <input id="uploadFullZipFile" type="file" accept=".zip,application/zip" class="hidden">
+      </div>
+      <p id="fullZipStatus" class="muted small sync-neutral">No ZIP backup created or restored yet.</p>
+    </div>
+
+    <div class="card">
+      <h3>Local Recovery Backup</h3>
+      <p class="muted small">Stores one emergency snapshot directly in this device's browser storage. Recovery replaces the current local bank with that snapshot. Clearing site/app data can also erase this recovery copy, so keep a downloaded ZIP for a real external backup.</p>
+      <div class="actions">
+        <button id="saveLocalRecovery" type="button">Save Local Recovery Backup</button>
+        <button id="recoverLocalRecovery" type="button">Recover Local Backup</button>
+        <button id="deleteLocalRecovery" type="button">Delete Local Recovery Backup</button>
+      </div>
+      <p id="localRecoveryStatus" class="muted small sync-neutral">Checking for a local recovery backup…</p>
+    </div>
+
+    <div class="card">
+      <h3>Question CSV</h3>
+      <p class="muted small">Legacy/editable question-only CSV. This is useful for spreadsheet editing, but the ZIP above is the complete backup format.</p>
       <div class="actions">
         <button id="exportCsv2">Export Questions (CSV)</button>
         <button id="importCsvBtn2">Import Questions (CSV)</button>
         <input id="importCsvFile2" type="file" accept=".csv,text/csv" class="hidden">
       </div>
-      <p class="muted small">The CSV contains the permanent question IDs, categories, difficulty, accepted answers, up to 25 possible choices, and the multiple-choice display settings.</p>
+      <p class="muted small">The question CSV contains the permanent question IDs, categories, difficulty, accepted answers, choices, and multiple-choice display settings.</p>
     </div>
   </div>
 
   <div class="sync-subpanel hidden" id="syncHelpPanel">
     <div class="card">
-      <h3>Google Sheets setup</h3>
-      <p class="muted small"><strong>Compatibility:</strong> This app is <code id="compatAppVersion"></code> and requires bridge protocol <code id="compatProtocol"></code>. The Test Connection button checks the installed bridge version before syncing.</p>
-      <ol>
-        <li>Create a Google Sheet that you want to use as the master question bank.</li>
-        <li>Open <strong>Extensions → Apps Script</strong>.</li>
-        <li>Replace the script with the bridge code supplied below (or download the included <code>KnowledgeSpeedrunSheetBridge.gs</code> file).</li>
-        <li>Set <code>SHEET_NAME</code> if you want a particular tab name; otherwise leave it as <code>KnowledgeBank</code>.</li>
-        <li>Save the script, then choose <strong>Deploy → New deployment → Web app</strong>. Google officially supports Apps Script web apps through <code>doGet</code>/<code>doPost</code>; the deployment screen lets you choose who the app executes as and who can access it. urlGoogle's Apps Script web-app documentationhttps://developers.google.com/apps-script/guides/web</li>
-        <li>For a personal sheet, use an access setting that lets your app reach the deployment. If Google asks you to authorize the script, authorize it for the Google account that owns the sheet.</li>
-        <li>Copy the deployed <code>/exec</code> URL into the Google Sheets tab above.</li>
-        <li>Press <strong>Test Connection</strong>, then <strong>Pull From Google Sheet</strong> if the sheet already contains questions, or <strong>Push Local Questions</strong> if the app is currently the version you want to make the master.</li>
-      </ol>
-      <p class="muted small">The bridge uses the spreadsheet itself as the readable database: one question per row, with the same columns used by the app's CSV format. Google Apps Script supports reading/writing spreadsheet ranges from a script. urlGoogle Apps Script Spreadsheet Range documentationhttps://developers.google.com/apps-script/reference/spreadsheet/range</p>
-      <h3>Manual CSV fallback</h3>
-      <ol>
-        <li>Press <strong>Export Questions (CSV)</strong>.</li>
-        <li>Open the CSV in Google Sheets.</li>
-        <li>Edit/add/delete rows as desired.</li>
-        <li>Download the sheet as CSV.</li>
-        <li>Use <strong>Import Questions (CSV)</strong> in the app.</li>
-      </ol>
-      <p class="muted small">I deliberately did not include screenshots of Google's setup screens because their Cloud/Apps Script UI changes over time; the official documentation links above are the reliable visual reference.</p>
+      <h3>Cloud Backend Setup</h3>
+      <p class="muted">Knowledge Speedrun can use either backend independently. You only need to configure the one you want. The local/offline copy works regardless.</p>
+
+      <div class="setup-guide">
+        <h4>Option A — Supabase</h4>
+        <p class="muted small">Recommended if you want a proper database, much more image capacity, and easier scaling.</p>
+        <ol>
+          <li>Create a free Supabase account and a new project at <a class="setup-link" href="https://supabase.com/dashboard" target="_blank" rel="noopener">Supabase Dashboard</a>. Wait until the project is ready.</li>
+          <li>In Supabase, open <strong>SQL Editor → New query</strong>.</li>
+          <li>Press <strong>Copy Supabase Setup SQL</strong> below, paste it into the SQL Editor, and press <strong>Run</strong>. This creates the question table, metadata table, private image bucket, row-level-security policies, and storage-usage function expected by Knowledge Speedrun.</li>
+          <li>Open the project's <strong>Connect</strong> dialog or <strong>Settings → API Keys</strong>. Copy the <strong>Project URL</strong> and the <strong>Publishable key</strong> (<code>sb_publishable_...</code>).</li>
+          <li>Return to <strong>Data Sync → Supabase</strong>, paste those two values into <strong>Supabase Connection</strong>, and press <strong>Save Supabase Connection</strong>.</li>
+          <li>In Supabase, open <strong>Authentication → URL Configuration</strong>. Add the deployed Knowledge Speedrun URL as an allowed Redirect URL. The exact URL for this copy of the app is shown below.</li>
+          <li>Back in Knowledge Speedrun, enter an email/password and press <strong>Create Account</strong>. Confirm the verification email, return to the app, then press <strong>Sign In</strong>.</li>
+          <li>Press <strong>Test Connection</strong>. For a brand-new empty Supabase project, use <strong>Force Full Update</strong> to upload the current local bank. Then use <strong>Verify Local vs Supabase</strong>.</li>
+        </ol>
+        <div class="setup-code-actions">
+          <button id="copySupaSql" type="button">Copy Supabase Setup SQL</button>
+          <button id="downloadSupaSql" type="button">Download Setup SQL</button>
+          <button id="copyCurrentAppUrl" type="button">Copy Current App URL</button>
+        </div>
+        <div class="setup-note">Current app URL: <code id="setupCurrentAppUrl"></code></div>
+        <div class="setup-warning"><strong>Security:</strong> only the Project URL and publishable key belong in the browser. Never paste a Supabase secret key or service-role key into Knowledge Speedrun or commit one to GitHub.</div>
+      </div>
+
+      <div class="setup-guide">
+        <h4>Option B — Google Sheets</h4>
+        <p class="muted small"><strong>Compatibility:</strong> app <code id="compatAppVersion"></code> requires bridge protocol <code id="compatProtocol"></code>. Test Connection checks this automatically.</p>
+        <ol>
+          <li>Create a new blank Google Sheet. This spreadsheet will become the cloud database.</li>
+          <li>In that Sheet, open <strong>Extensions → Apps Script</strong>.</li>
+          <li>Delete the starter code in <code>Code.gs</code>. Use <strong>Copy Google Bridge</strong> below and paste the complete bridge code into Apps Script. Save the project.</li>
+          <li>Optional: at the top of the bridge, change <code>SHEET_NAME</code> if you want the main tab to have a different name. Leaving it as <code>KnowledgeBank</code> is recommended.</li>
+          <li>Choose <strong>Deploy → New deployment</strong>, select <strong>Web app</strong>, and deploy it so the browser app can access the endpoint. Execute it as the Sheet owner. The deployed endpoint must be accessible without an interactive Google login because Knowledge Speedrun calls it directly from the browser.</li>
+          <li>Authorize the Apps Script permissions when Google asks.</li>
+          <li>Copy the deployment's URL ending in <code>/exec</code>.</li>
+          <li>Return to <strong>Data Sync → Google Sheets</strong>, paste the URL into <strong>Google Apps Script Web App URL</strong>, and press <strong>Test Connection</strong>.</li>
+          <li>If Knowledge Speedrun already contains the bank you want to keep, use <strong>Force Full Update</strong> for the first upload. If the Sheet already contains your master bank, use <strong>Pull From Google Sheet</strong> instead. Then run <strong>Verify Local vs Google Sheet</strong>.</li>
+        </ol>
+        <div class="setup-code-actions">
+          <button id="copyGoogleBridge" type="button">Copy Google Bridge</button>
+          <button id="downloadGoogleBridge" type="button">Download Google Bridge (.gs)</button>
+        </div>
+        <div class="setup-note"><strong>Google image limit:</strong> this build limits Google Sheets sync to 500 images. Images may be up to 15 KB after compression; the bridge splits each image across multiple cells, so individual 15 KB images still parse correctly.</div>
+        <div class="setup-warning"><strong>Keep the Apps Script <code>/exec</code> URL private.</strong> The current Google bridge uses that deployment URL as the connection endpoint and does not have a second password/token layer.</div>
+      </div>
+
+      <div class="setup-guide">
+        <h4>Manual backup / escape hatch</h4>
+        <p class="muted small">Cloud sync is optional. The <strong>Manual CSV</strong> tab includes a full ZIP backup containing complete app data plus an images folder, along with a device-local emergency recovery snapshot.</p>
+      </div>
+
+      <p id="setupActionStatus" class="muted small sync-neutral"></p>
     </div>
   </div>
+
 </section>
 
 
@@ -1428,6 +1605,7 @@ const BUILTIN_DATA_KEY="knowledge-speedrun-builtin-data-v1";
 const $=id=>document.getElementById(id);
 
 const MAX_STORED_IMAGES=5000;
+const GOOGLE_SHEETS_MAX_IMAGES=500;
 const MAX_IMAGES_PER_QUESTION=3;
 const IMAGE_DB_NAME="knowledge-speedrun-images-v2";
 const IMAGE_DB_STORE="images";
@@ -1437,11 +1615,46 @@ let imagePersistChain=Promise.resolve();
 // Images are deliberately kept small because Google Sheets is our only
 // external storage. WebP gives us much better size/quality than JPEG for
 // this use case, especially for diagrams and screenshots.
-const IMAGE_TARGET_BYTES=6*1024;
-const IMAGE_HARD_MAX_BYTES=9*1024;
+const IMAGE_TARGET_BYTES=12*1024;
+const IMAGE_HARD_MAX_BYTES=15*1024;
 const IMAGE_MAX_DIMENSION=640;
 const IMAGE_WEBP_QUALITIES=[0.68,0.58,0.48,0.38,0.30,0.24,0.20];
 const IMAGE_JPEG_QUALITIES=[0.58,0.48,0.38,0.30,0.24,0.20];
+
+
+function refreshGooglePushAvailability(){
+  const imageCount=getAllStoredImageEntries().length;
+  const overLimit=imageCount>GOOGLE_SHEETS_MAX_IMAGES;
+  const push=$("sheetPush");
+  const force=$("sheetForcePush");
+  const warning=$("googleImageLimitWarning");
+
+  if(push){
+    push.disabled=overLimit;
+    push.title=overLimit
+      ? `Google Sheets push disabled: this local bank contains ${imageCount.toLocaleString()} images, exceeding the ${GOOGLE_SHEETS_MAX_IMAGES.toLocaleString()}-image Google Sheets maximum.`
+      : "";
+  }
+  if(force){
+    force.disabled=overLimit;
+    force.title=push?.title||"";
+  }
+  if(warning){
+    if(overLimit){
+      warning.textContent=
+        `GOOGLE SHEETS PUSH DISABLED: This local question bank contains ${imageCount.toLocaleString()} images. `+
+        `Google Sheets supports a maximum of ${GOOGLE_SHEETS_MAX_IMAGES.toLocaleString()} images for Knowledge Speedrun at the current image-quality setting. `+
+        `Pushing this bank to Google Sheets would exceed that limit by ${(imageCount-GOOGLE_SHEETS_MAX_IMAGES).toLocaleString()} image${imageCount-GOOGLE_SHEETS_MAX_IMAGES===1?"":"s"}. `+
+        `Remove images until the bank contains ${GOOGLE_SHEETS_MAX_IMAGES.toLocaleString()} or fewer, or continue using Supabase instead.`;
+      warning.classList.remove("hidden");
+    }else{
+      warning.textContent="";
+      warning.classList.add("hidden");
+    }
+  }
+  return !overLimit;
+}
+
 
 function imageDataUrlToBlob(dataUrl){
   return fetch(dataUrl).then(r=>r.blob());
@@ -1577,6 +1790,131 @@ async function deleteImageRecords(ids){
   });
 }
 
+let lastLocalImageCleanup={items:0,bytes:0};
+
+function dataUrlByteLength(src){
+  if(!src || typeof src!=="string")return 0;
+  const comma=src.indexOf(",");
+  if(comma<0)return 0;
+  const body=src.slice(comma+1);
+  if(/;base64/i.test(src.slice(0,comma))){
+    const padding=body.endsWith("==")?2:body.endsWith("=")?1:0;
+    return Math.max(0,Math.floor(body.length*3/4)-padding);
+  }
+  try{return new Blob([decodeURIComponent(body)]).size;}catch(_){return new Blob([body]).size;}
+}
+
+async function getAllImageDbRecords(){
+  const db=await openImageDb();
+  if(!db)return [];
+  return await new Promise((resolve,reject)=>{
+    const tx=db.transaction(IMAGE_DB_STORE,"readonly");
+    const request=tx.objectStore(IMAGE_DB_STORE).openCursor();
+    const rows=[];
+    request.onsuccess=()=>{
+      const cursor=request.result;
+      if(!cursor){resolve(rows);return;}
+      rows.push(cursor.value);
+      cursor.continue();
+    };
+    request.onerror=()=>reject(request.error);
+  });
+}
+
+function referencedLocalImageIds(){
+  const keep=new Set();
+  bank.forEach(q=>{
+    const refs=Array.isArray(q.imageRefs)?q.imageRefs:[];
+    refs.forEach(id=>keep.add(id));
+    if(!refs.length){
+      getQuestionImages(q).slice(0,MAX_IMAGES_PER_QUESTION).forEach((_,index)=>{
+        keep.add(imageRefFor(q,index));
+      });
+    }
+  });
+  return keep;
+}
+
+async function cleanLocalImageStorage(options={}){
+  if(!("indexedDB" in window))return {items:0,bytes:0};
+  const keep=options.keep instanceof Set?options.keep:referencedLocalImageIds();
+  const rows=await getAllImageDbRecords();
+  const stale=rows.filter(row=>!keep.has(row.id));
+  const bytes=stale.reduce((sum,row)=>sum+dataUrlByteLength(row.data),0);
+  if(stale.length)await deleteImageRecords(stale.map(row=>row.id));
+  const result={items:stale.length,bytes};
+  lastLocalImageCleanup=result;
+  return result;
+}
+
+function formatStorageBytes(bytes){
+  const n=Number(bytes)||0;
+  if(n<1024)return `${n} B`;
+  if(n<1024*1024)return `${(n/1024).toFixed(n<10*1024?1:0)} KB`;
+  if(n<1024*1024*1024)return `${(n/1024/1024).toFixed(n<10*1024*1024?1:0)} MB`;
+  return `${(n/1024/1024/1024).toFixed(2)} GB`;
+}
+
+async function getLocalStorageStats(){
+  const rows=await getAllImageDbRecords();
+  const imageBytes=rows.reduce((sum,row)=>sum+dataUrlByteLength(row.data),0);
+  let usage=null,quota=null;
+  if(navigator.storage?.estimate){
+    try{
+      const estimate=await navigator.storage.estimate();
+      usage=Number.isFinite(estimate.usage)?estimate.usage:null;
+      quota=Number.isFinite(estimate.quota)?estimate.quota:null;
+    }catch(_){}
+  }
+  return {imageCount:rows.length,imageBytes,usage,quota};
+}
+
+
+function updateStorageWarning(elementId,pct,label){
+  const el=$(elementId);
+  if(!el)return;
+  if(!Number.isFinite(pct) || pct<90){
+    el.classList.add("hidden");
+    el.classList.remove("storage-critical");
+    el.textContent="";
+    return;
+  }
+  el.classList.remove("hidden");
+  const critical=pct>=98;
+  el.classList.toggle("storage-critical",critical);
+  el.textContent=critical
+    ? `Storage critically low: ${label} is ${pct.toFixed(1)}% full. Free space or move data before continuing to add content.`
+    : `Storage warning: ${label} is ${pct.toFixed(1)}% full. Consider freeing space before it reaches the limit.`;
+}
+
+async function refreshLocalStorageDisplay(){
+  const imageValue=$("localImageStorageValue");
+  if(!imageValue)return;
+  try{
+    const stats=await getLocalStorageStats();
+    imageValue.textContent=`${stats.imageCount.toLocaleString()} • ${formatStorageBytes(stats.imageBytes)}`;
+    $("localBrowserStorageValue").textContent=stats.usage===null?"Unavailable":formatStorageBytes(stats.usage);
+    $("localBrowserQuotaValue").textContent=stats.quota===null?"Unavailable":formatStorageBytes(stats.quota);
+    const pct=stats.usage!==null&&stats.quota?Math.min(100,(stats.usage/stats.quota)*100):0;
+    $("localStorageProgressFill").style.width=`${pct}%`;
+    $("localStorageProgressText").textContent=
+      stats.usage!==null&&stats.quota
+        ? `${pct.toFixed(pct<1?2:1)}% of this browser's available storage is currently in use. Browser usage includes more than just Knowledge Speedrun.`
+        : "This browser does not expose an overall storage quota. Knowledge Speedrun image-cache size is still measured exactly above.";
+    updateStorageWarning("localStorageWarning",
+      stats.usage!==null&&stats.quota?pct:NaN,
+      "this browser's local storage allowance");
+  }catch(err){
+    imageValue.textContent="Could not read";
+    $("localStorageProgressText").textContent=`Storage check failed: ${err.message}`;
+    updateStorageWarning("localStorageWarning",NaN,"local storage");
+  }
+}
+
+function localCleanupMessage(result,prefix="Cleanup complete"){
+  return `${prefix}: removed ${result.items.toLocaleString()} unused item${result.items===1?"":"s"} and freed ${formatStorageBytes(result.bytes)}.`;
+}
+
 async function persistBank(){
   const snapshot=bank.map(q=>({
     ...q
@@ -1653,13 +1991,25 @@ async function persistBank(){
           request.onerror=()=>reject(request.error);
         });
 
+        const staleRows=[];
+        if(stale.length){
+          const allRows=await getAllImageDbRecords();
+          const staleSet=new Set(stale);
+          staleRows.push(...allRows.filter(row=>staleSet.has(row.id)));
+        }
+        const freedBytes=staleRows.reduce((sum,row)=>sum+dataUrlByteLength(row.data),0);
         await deleteImageRecords(stale);
+        lastLocalImageCleanup={items:stale.length,bytes:freedBytes};
+      }else{
+        lastLocalImageCleanup={items:0,bytes:0};
       }
 
       localStorage.setItem(
         KEY,
         JSON.stringify(storedBank)
       );
+      refreshLocalStorageDisplay().catch(()=>{});
+refreshGooglePushAvailability();
     }
   );
 
@@ -3464,6 +3814,7 @@ function updateBankCapacityDisplays(){
 }
 
 function updateUI(){
+  refreshGooglePushAvailability();
   updateBankCapacityDisplays();
   const cats=categories();
   renderCategoryControls();
@@ -5967,7 +6318,7 @@ function downloadText(filename,text,type){
 
 
 /* ---------- Google Sheets bridge sync ---------- */
-const APP_VERSION="2026.08.24.50";
+const APP_VERSION="2026.08.24.62";
 const SYNC_PROTOCOL_ID="KS-SYNC-5";
 const REQUIRED_BRIDGE_COMPAT="KS-SYNC-5";
 function setAppVersionDisplays(){
@@ -6687,6 +7038,7 @@ $("sheetPull").onclick=async()=>{
 };
 
 $("sheetForcePush").onclick=async()=>{
+  if(!refreshGooglePushAvailability())return;
   setSyncBusy(true,"Forcing full update…");
   try{
     if(!bank.length){
@@ -6741,6 +7093,7 @@ $("sheetForcePush").onclick=async()=>{
 };
 
 $("sheetPush").onclick=async()=>{
+  if(!refreshGooglePushAvailability())return;
   setSyncBusy(true,"Pushing…");
   try{
     const changes=syncChangeCount();
@@ -6864,14 +7217,118 @@ $("sheetPush").onclick=async()=>{
 
 
 
+
+const cleanLocalStorageButton=$("cleanLocalStorage");
+if(cleanLocalStorageButton){
+  cleanLocalStorageButton.onclick=async()=>{
+    const status=$("localStorageCleanupStatus");
+    try{
+      status.textContent="Scanning local image cache…";
+      status.className="muted small sync-pending";
+      await persistBank();
+      const first={...lastLocalImageCleanup};
+      const second=await cleanLocalImageStorage();
+      const result={items:first.items+second.items,bytes:first.bytes+second.bytes};
+      status.textContent=localCleanupMessage(result);
+      status.className="muted small sync-success";
+      await refreshLocalStorageDisplay();
+    }catch(err){
+      status.textContent=`Cleanup failed: ${err.message}`;
+      status.className="muted small sync-error";
+    }
+  };
+}
+const refreshLocalStorageButton=$("refreshLocalStorage");
+if(refreshLocalStorageButton){
+  refreshLocalStorageButton.onclick=()=>refreshLocalStorageDisplay();
+}
+refreshLocalStorageDisplay().catch(()=>{});
+
 /* ---------- Supabase dual-backend sync ---------- */
-const SUPA_URL="https://pbyoizjmmtolokujhtlz.supabase.co";
-const SUPA_KEY="sb_publishable_gfUsIGAudP0fUnsGdBmkNw_9UyYghSk";
+const SUPA_CONFIG_KEY="knowledge-speedrun-supabase-config-v1";
+const LEGACY_SUPA_URL="https://pbyoizjmmtolokujhtlz.supabase.co";
+const LEGACY_SUPA_KEY="sb_publishable_gfUsIGAudP0fUnsGdBmkNw_9UyYghSk";
 const SUPA_SESSION_KEY="knowledge-speedrun-supabase-session-v1";
 const SUPA_BASELINE_KEY="knowledge-speedrun-supabase-baseline-v1";
+const SUPA_LAST_CONTACT_KEY="knowledge-speedrun-supabase-last-contact-v1";
+let savedSupaConfig=JSON.parse(localStorage.getItem(SUPA_CONFIG_KEY)||"null");
+const existingLegacySession=JSON.parse(localStorage.getItem(SUPA_SESSION_KEY)||"null");
+if(!savedSupaConfig && existingLegacySession){
+  savedSupaConfig={url:LEGACY_SUPA_URL,key:LEGACY_SUPA_KEY};
+  localStorage.setItem(SUPA_CONFIG_KEY,JSON.stringify(savedSupaConfig));
+}
+let SUPA_URL=String(savedSupaConfig?.url||"").replace(/\/$/,"");
+let SUPA_KEY=String(savedSupaConfig?.key||"").trim();
 const SUPA_BUCKET="knowledge-speedrun-images";
 let supaSession=JSON.parse(localStorage.getItem(SUPA_SESSION_KEY)||"null");
 let supaBaseline=JSON.parse(localStorage.getItem(SUPA_BASELINE_KEY)||"null");
+
+
+
+function supaRecordContact(){
+  localStorage.setItem(SUPA_LAST_CONTACT_KEY,String(Date.now()));
+  supaRenderLastContact();
+}
+function supaRenderLastContact(){
+  const el=$("supaLastContact");
+  if(!el)return;
+  const raw=Number(localStorage.getItem(SUPA_LAST_CONTACT_KEY));
+  el.textContent=raw
+    ? `Supabase last contacted: ${new Date(raw).toLocaleString()}`
+    : "Supabase last contacted: never on this device.";
+}
+
+function supaConfigured(){
+  return /^https:\/\/.+\.supabase\.co$/i.test(SUPA_URL) && !!SUPA_KEY;
+}
+function supaRequireConfigured(){
+  if(!supaConfigured()){
+    throw new Error("Configure the Supabase Project URL and publishable key first.");
+  }
+}
+function supaRenderConnection(){
+  const urlInput=$("supaProjectUrl");
+  const keyInput=$("supaPublishableKey");
+  if(urlInput)urlInput.value=SUPA_URL;
+  if(keyInput)keyInput.value=SUPA_KEY;
+  const badge=$("supaProjectBadge");
+  if(badge){
+    if(!supaConfigured()){
+      badge.textContent="Supabase project: not configured";
+    }else{
+      let host=SUPA_URL;
+      try{host=new URL(SUPA_URL).hostname.split(".")[0];}catch(_){}
+      badge.textContent=`Supabase project: ${host} • private per-user storage`;
+    }
+  }
+}
+function supaSaveConnection(){
+  const nextUrl=String($("supaProjectUrl")?.value||"").trim().replace(/\/$/,"");
+  const nextKey=String($("supaPublishableKey")?.value||"").trim();
+  if(!/^https:\/\/.+\.supabase\.co$/i.test(nextUrl)){
+    throw new Error("Enter a valid Supabase Project URL, such as https://project-ref.supabase.co");
+  }
+  if(!nextKey){
+    throw new Error("Enter the project's publishable key.");
+  }
+  const changed=nextUrl!==SUPA_URL || nextKey!==SUPA_KEY;
+  if(changed && supaSession && !confirm("Changing Supabase projects will sign this browser out of the current Supabase account and reset its Supabase sync baseline. Continue?")){
+    return false;
+  }
+  SUPA_URL=nextUrl;
+  SUPA_KEY=nextKey;
+  localStorage.setItem(SUPA_CONFIG_KEY,JSON.stringify({url:SUPA_URL,key:SUPA_KEY}));
+  if(changed){
+    supaSession=null;
+    supaBaseline=null;
+    localStorage.removeItem(SUPA_SESSION_KEY);
+    localStorage.removeItem(SUPA_BASELINE_KEY);
+  }
+  supaRenderConnection();
+  supaRenderAuth();
+  refreshSupaStorageDisplay().catch(()=>{});
+  return true;
+}
 
 function supaRedirectUrl(){
   // Always return to the exact deployed app page, without stale auth/query fragments.
@@ -6893,6 +7350,7 @@ function supaHideConfirmation(){
 }
 
 function supaHeaders(extra={}){
+  supaRequireConfigured();
   const token=supaSession?.access_token||SUPA_KEY;
   return {apikey:SUPA_KEY,Authorization:`Bearer ${token}`,...extra};
 }
@@ -6927,6 +7385,7 @@ function supaRenderAuth(){
   }
 }
 async function supaAuth(path,body){
+  supaRequireConfigured();
   const r=await fetch(`${SUPA_URL}/auth/v1/${path}`,{method:"POST",headers:{apikey:SUPA_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
   const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.msg||d.message||d.error_description||`Supabase auth HTTP ${r.status}`); return d;
 }
@@ -6940,6 +7399,86 @@ async function supaFetch(path,options={}){
   const r=await fetch(`${SUPA_URL}${path}`,{...options,headers:supaHeaders(options.headers||{})});
   if(!r.ok){const t=await r.text().catch(()=>"");throw new Error(`Supabase HTTP ${r.status}${t?`: ${t.slice(0,300)}`:""}`);} return r;
 }
+
+const SUPA_STORAGE_ALLOWANCE_BYTES=1024*1024*1024; // Free-plan file storage: 1 GB.
+const SUPA_DATABASE_ALLOWANCE_BYTES=500*1024*1024; // Free-plan database: 500 MB.
+
+
+async function supaGetCloudStorageStats(){
+  await supaRefreshIfNeeded();
+  supaRequireAuth();
+  const r=await supaFetch(
+    `/rest/v1/rpc/knowledge_speedrun_storage_stats`,
+    {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}
+  );
+  const data=await r.json();
+  const row=Array.isArray(data)?data[0]:data;
+  return {
+    questionCount:Number(row?.question_count)||0,
+    databaseBytes:Number(row?.database_bytes)||0,
+    imageCount:Number(row?.image_count)||0,
+    imageBytes:Number(row?.image_bytes)||0
+  };
+}
+
+async function refreshSupaStorageDisplay(){
+  const value=$("supaStorageValue");
+  if(!value)return;
+
+  const clear=()=>{
+    value.textContent="Not signed in";
+    $("supaDatabaseStorageValue").textContent="—";
+    $("supaImageStorageValue").textContent="—";
+    $("supaDatabaseProgressFill").style.width="0%";
+    $("supaStorageProgressFill").style.width="0%";
+    $("supaDatabaseProgressText").textContent="Sign in to measure database usage.";
+    $("supaStorageProgressText").textContent="Sign in to measure file-storage usage.";
+    updateStorageWarning("supaDatabaseWarning",NaN,"Supabase database storage");
+    updateStorageWarning("supaFileWarning",NaN,"Supabase file storage");
+  };
+
+  if(!supaUserId()){clear();return;}
+
+  value.textContent="Checking…";
+  try{
+    const stats=await supaGetCloudStorageStats();
+    const total=stats.databaseBytes+stats.imageBytes;
+    const dbPct=Math.min(100,(stats.databaseBytes/SUPA_DATABASE_ALLOWANCE_BYTES)*100);
+    const filePct=Math.min(100,(stats.imageBytes/SUPA_STORAGE_ALLOWANCE_BYTES)*100);
+
+    value.textContent=`${formatStorageBytes(total)} total Knowledge Speedrun data`;
+
+    $("supaDatabaseStorageValue").textContent=
+      `${stats.questionCount.toLocaleString()} questions • ${formatStorageBytes(stats.databaseBytes)}`;
+    $("supaImageStorageValue").textContent=
+      `${stats.imageCount.toLocaleString()} images • ${formatStorageBytes(stats.imageBytes)}`;
+
+    $("supaDatabaseProgressFill").style.width=`${dbPct}%`;
+    $("supaStorageProgressFill").style.width=`${filePct}%`;
+
+    $("supaDatabaseProgressText").textContent=
+      `${formatStorageBytes(stats.databaseBytes)} / 500 MB • `+
+      `${dbPct.toFixed(dbPct<0.1?3:dbPct<1?2:1)}% used.`;
+
+    $("supaStorageProgressText").textContent=
+      `${formatStorageBytes(stats.imageBytes)} / 1 GB • `+
+      `${filePct.toFixed(filePct<0.1?3:filePct<1?2:1)}% used.`;
+
+    updateStorageWarning("supaDatabaseWarning",dbPct,"Supabase database storage");
+    updateStorageWarning("supaFileWarning",filePct,"Supabase file storage");
+  }catch(err){
+    value.textContent="Could not read";
+    $("supaDatabaseStorageValue").textContent="—";
+    $("supaImageStorageValue").textContent="—";
+    $("supaDatabaseProgressFill").style.width="0%";
+    $("supaStorageProgressFill").style.width="0%";
+    $("supaDatabaseProgressText").textContent=err.message;
+    $("supaStorageProgressText").textContent=err.message;
+    updateStorageWarning("supaDatabaseWarning",NaN,"Supabase database storage");
+    updateStorageWarning("supaFileWarning",NaN,"Supabase file storage");
+  }
+}
+
 async function supaHashDataUrl(dataUrl){
   const blob=await imageDataUrlToBlob(dataUrl); const digest=await crypto.subtle.digest("SHA-256",await blob.arrayBuffer());
   return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,"0")).join("");
@@ -6989,7 +7528,22 @@ function supaChangedQuestions(){if(!supaBaseline)return [...bank];return bank.fi
 function supaDeletedIds(){if(!supaBaseline)return [];const ids=new Set(bank.map(q=>String(q.id)));return Object.keys(supaBaseline).filter(id=>!ids.has(id));}
 async function supaDeleteQuestionIds(ids){for(let i=0;i<ids.length;i+=100){const vals=ids.slice(i,i+100).map(x=>`"${String(x).replaceAll('"','\\"')}"`).join(",");await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}&question_id=in.(${encodeURIComponent(vals)})`,{method:"DELETE"});}}
 
-$("supaSignIn").onclick=async()=>{try{const d=await supaAuth("token?grant_type=password",{email:$("supaEmail").value.trim(),password:$("supaPassword").value});supaPersistSession(d);supaHideConfirmation();supaStatus("✓ Signed in. Supabase sync is ready.");}catch(e){supaStatus(e.message,false);}};
+const supaSaveConnectionButton=$("supaSaveConnection");
+if(supaSaveConnectionButton){
+  supaSaveConnectionButton.onclick=()=>{
+    try{
+      if(supaSaveConnection()){
+        supaStatus("✓ Supabase connection settings saved.");
+      }
+    }catch(err){
+      supaStatus(err.message,false);
+    }
+  };
+}
+supaRenderConnection();
+supaRenderLastContact();
+
+$("supaSignIn").onclick=async()=>{try{const d=await supaAuth("token?grant_type=password",{email:$("supaEmail").value.trim(),password:$("supaPassword").value});supaPersistSession(d);supaHideConfirmation();supaStatus("✓ Signed in. Supabase sync is ready.");refreshSupaStorageDisplay().catch(()=>{});}catch(e){supaStatus(e.message,false);}};
 $("supaSignUp").onclick=async()=>{
   try{
     const email=$("supaEmail").value.trim();
@@ -7015,11 +7569,14 @@ $("supaSignUp").onclick=async()=>{
   }
 };
 $("supaSignOut").onclick=async()=>{try{if(supaSession?.access_token)await fetch(`${SUPA_URL}/auth/v1/logout`,{method:"POST",headers:supaHeaders()});}catch(_){}supaPersistSession(null);supaStatus("Signed out.");};
-$("supaTest").onclick=async()=>{try{supaStatus("Testing Supabase…","pending");await supaRefreshIfNeeded();supaRequireAuth();const r=await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}&select=question_id&limit=1`);await r.json();supaStatus("✓ Connected to Supabase. Database and authentication are responding.");}catch(e){supaStatus(e.message,false);}};
+const supaRefreshStorageButton=$("supaRefreshStorage");
+if(supaRefreshStorageButton)supaRefreshStorageButton.onclick=()=>refreshSupaStorageDisplay();
+
+$("supaTest").onclick=async()=>{try{supaStatus("Testing Supabase…","pending");await supaRefreshIfNeeded();supaRequireAuth();const r=await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}&select=question_id&limit=1`);await r.json();supaStatus("✓ Connected to Supabase. Database and authentication are responding.");refreshSupaStorageDisplay().catch(()=>{});}catch(e){supaStatus(e.message,false);}};
 $("supaVerify").onclick=async()=>{try{supaStatus("Verifying local data against Supabase…","pending");await hydrateBankImages();const remote=await supaGetRemoteState();const report=syncVerificationReport(getSyncState(),remote);if(report.match)supaStatus(`✓ Verified: local data matches Supabase. ${report.questions.localCount} questions and all auxiliary data match.`);else{const p=[];if(report.questions.missingOnline.length)p.push(`${report.questions.missingOnline.length} local missing online`);if(report.questions.missingLocal.length)p.push(`${report.questions.missingLocal.length} online missing locally`);if(report.questions.changed.length)p.push(`${report.questions.changed.length} questions differ`);if(report.auxiliary.length)p.push(`auxiliary differs: ${report.auxiliary.join(", ")}`);supaStatus(`✗ Verification failed: ${p.join("; ")}.`,false);}}catch(e){supaStatus(e.message,false);}};
-$("supaPull").onclick=async()=>{try{if(!confirm("Pulling from Supabase will replace this browser's local data. Google Sheets will not be changed. Continue?"))return;supaStatus("Pulling from Supabase…","pending");const remote=await supaGetRemoteState();await applySyncState(remote);supaMarkBaseline();supaStatus(`Pulled ${bank.length} questions from Supabase. Images were cached locally for offline use.`);}catch(e){supaStatus(e.message,false);}};
-$("supaPush").onclick=async()=>{try{supaRequireAuth();const changed=supaChangedQuestions(),deleted=supaDeletedIds();if(!changed.length&&!deleted.length){await supaUpsertMeta();supaStatus("Supabase is already up to date.");return;}if(!confirm(`Push ${changed.length} changed/new question(s) and ${deleted.length} deletion(s) to Supabase?\n\nGoogle Sheets will not be changed.`))return;supaStatus("Pushing local changes to Supabase…","pending");await hydrateBankImages();await supaUpsertQuestions(changed);await supaDeleteQuestionIds(deleted);await supaUpsertMeta();supaMarkBaseline();supaStatus(`✓ Supabase push complete: ${changed.length} upserted, ${deleted.length} deleted.`);}catch(e){supaStatus(e.message,false);}};
-$("supaForcePush").onclick=async()=>{try{supaRequireAuth();if(!confirm(`FORCE FULL SUPABASE UPDATE\n\nReplace the Supabase bank with all ${bank.length} local questions and their images?\n\nGoogle Sheets will NOT be changed.`))return;supaStatus("Forcing full Supabase update…","pending");await hydrateBankImages();await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}`,{method:"DELETE"});await supaUpsertQuestions(bank);await supaUpsertMeta();supaMarkBaseline();supaStatus(`✓ Full Supabase update complete: ${bank.length} questions uploaded.`);}catch(e){supaStatus(e.message,false);}};
+$("supaPull").onclick=async()=>{try{if(!confirm("Pulling from Supabase will replace this browser's local data. Google Sheets will not be changed. Continue?"))return;supaStatus("Pulling from Supabase…","pending");const remote=await supaGetRemoteState();await applySyncState(remote);const cleaned={...lastLocalImageCleanup};supaMarkBaseline();await refreshLocalStorageDisplay();supaStatus(`Pulled ${bank.length} questions from Supabase. Images were cached locally for offline use. ${localCleanupMessage(cleaned,"Local cleanup")}`);supaRecordContact();}catch(e){supaStatus(e.message,false);}};
+$("supaPush").onclick=async()=>{try{supaRequireAuth();const changed=supaChangedQuestions(),deleted=supaDeletedIds();if(!changed.length&&!deleted.length){await supaUpsertMeta();supaStatus("Supabase is already up to date.");return;}if(!confirm(`Push ${changed.length} changed/new question(s) and ${deleted.length} deletion(s) to Supabase?\n\nGoogle Sheets will not be changed.`))return;supaStatus("Pushing local changes to Supabase…","pending");await hydrateBankImages();await supaUpsertQuestions(changed);await supaDeleteQuestionIds(deleted);await supaUpsertMeta();supaMarkBaseline();supaStatus(`✓ Supabase push complete: ${changed.length} upserted, ${deleted.length} deleted.`);supaRecordContact();refreshSupaStorageDisplay().catch(()=>{});}catch(e){supaStatus(e.message,false);}};
+$("supaForcePush").onclick=async()=>{try{supaRequireAuth();if(!confirm(`FORCE FULL SUPABASE UPDATE\n\nReplace the Supabase bank with all ${bank.length} local questions and their images?\n\nGoogle Sheets will NOT be changed.`))return;supaStatus("Forcing full Supabase update…","pending");await hydrateBankImages();await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}`,{method:"DELETE"});await supaUpsertQuestions(bank);await supaUpsertMeta();supaMarkBaseline();supaStatus(`✓ Full Supabase update complete: ${bank.length} questions uploaded.`);supaRecordContact();refreshSupaStorageDisplay().catch(()=>{});}catch(e){supaStatus(e.message,false);}};
 
 const supaPasswordToggle=$("supaPasswordToggle");
 if(supaPasswordToggle){
@@ -7040,6 +7597,42 @@ if(supaPasswordToggle){
   });
 }
 supaRenderAuth();
+refreshSupaStorageDisplay().catch(()=>{});
+
+
+const KNOWLEDGE_SPEEDRUN_GOOGLE_BRIDGE_SOURCE="/**\n * Knowledge Speedrun \u2194 Google Sheets bridge\n *\n * Protocol: KS-SYNC-5\n * Bridge version: 2026.08.23.10\n *\n * Architecture:\n *   Questions   -> one row per question, flexible JSON payload\n *   Images      -> one row per image, chunked below the Sheets cell limit\n *   AnswerPools -> one row per pool\n *   TestHistory -> one row per history record\n *   CustomTests -> one row per saved custom test\n *   Categories  -> one row per custom category\n *   Settings    -> small key/value state\n *\n * The spreadsheet remains the single storage vessel.\n *\n * IMPORTANT:\n *   The old KnowledgeBank layout is still readable. The first full push\n *   automatically migrates it to the canonical layout.\n */\n\nconst SHEET_NAME = \"KnowledgeBank\";\nconst IMAGE_SHEET_NAME = \"Images\";\nconst ANSWER_POOL_SHEET_NAME = \"AnswerPools\";\nconst HISTORY_SHEET_NAME = \"TestHistory\";\nconst TEST_SNAPSHOT_SHEET_NAME = \"TestSnapshots\";\nconst CUSTOM_TEST_SHEET_NAME = \"CustomTests\";\nconst CATEGORY_SHEET_NAME = \"Categories\";\nconst SETTINGS_SHEET_NAME = \"Settings\";\n\nconst BRIDGE_VERSION = \"2026.08.23.10\";\nconst SYNC_PROTOCOL_ID = \"KS-SYNC-5\";\n\nconst MAX_IMAGES = 500;\nconst MAX_IMAGES_PER_QUESTION = 3;\nconst IMAGE_CHUNK_SIZE = 16000;\nconst IMAGE_CHUNKS = 4;\n\nconst QUESTION_HEADERS = [\n  \"ID\",\n  \"Updated At\",\n  \"Image IDs\",\n  \"Data JSON\"\n];\n\nconst IMAGE_HEADERS = [\n  \"Image ID\",\n  \"Question ID\",\n  \"Position\",\n  \"Updated At\",\n  \"Chunk 1\",\n  \"Chunk 2\",\n  \"Chunk 3\",\n  \"Chunk 4\"\n];\n\nconst JSON_HEADERS = [\n  \"ID\",\n  \"Updated At\",\n  \"Data JSON\"\n];\n\nconst SETTINGS_HEADERS = [\n  \"Key\",\n  \"Updated At\",\n  \"Data JSON\"\n];\n\nconst TEST_SNAPSHOT_HEADERS = [\n  \"Snapshot ID\",\n  \"History ID\",\n  \"Question ID\",\n  \"Updated At\",\n  \"Data JSON\"\n];\n\n\n\nconst SHEETS_CELL_LIMIT = 50000;\n\nfunction validateSheetRows_(sheetName, headers, rows) {\n  for (let r = 0; r < rows.length; r++) {\n    for (let c = 0; c < rows[r].length; c++) {\n      const value = rows[r][c];\n      const length = String(value == null ? \"\" : value).length;\n\n      if (length > SHEETS_CELL_LIMIT) {\n        const columnName =\n          headers[c] != null\n            ? String(headers[c])\n            : `Column ${c + 1}`;\n\n        const recordId =\n          rows[r][0] != null\n            ? String(rows[r][0])\n            : \"\";\n\n        throw new Error(\n          `Google Sheets cell limit exceeded before writing. ` +\n          `Sheet \"${sheetName}\", row ${r + 2}, ` +\n          `column \"${columnName}\", ${length.toLocaleString()} characters ` +\n          `(maximum ${SHEETS_CELL_LIMIT.toLocaleString()}).` +\n          (recordId\n            ? ` Record ID: ${recordId}.`\n            : \"\")\n        );\n      }\n    }\n  }\n}\n\nfunction doGet(e) {\n  try {\n    const action = e && e.parameter && e.parameter.action\n      ? e.parameter.action\n      : \"\";\n\n    if (action !== \"get\") {\n      return json_({\n        ok: true,\n        service: \"Knowledge Speedrun Sheet Bridge\",\n        bridgeVersion: BRIDGE_VERSION,\n        syncProtocolId: SYNC_PROTOCOL_ID\n      });\n    }\n\n    const state = readFullState_();\n\n    return json_({\n      ok: true,\n      bridgeVersion: BRIDGE_VERSION,\n      syncProtocolId: SYNC_PROTOCOL_ID,\n      ...state\n    });\n\n  } catch (err) {\n    return json_({\n      ok: false,\n      bridgeVersion: BRIDGE_VERSION,\n      syncProtocolId: SYNC_PROTOCOL_ID,\n      error: String(err && err.message || err)\n    });\n  }\n}\n\n\nfunction doPost(e) {\n  try {\n    if (!e || !e.postData || !e.postData.contents) {\n      throw new Error(\"No POST data.\");\n    }\n\n    const body = JSON.parse(e.postData.contents);\n\n    if (body.action === \"replace\") {\n      if (!Array.isArray(body.questions)) {\n        throw new Error(\"Expected {action:'replace', questions:[...]}.\");\n      }\n\n      writeQuestionsFull_(body.questions);\n      writeAuxiliaryState_(body);\n\n      return json_({\n        ok: true,\n        action: \"replace\",\n        count: body.questions.length,\n        bridgeVersion: BRIDGE_VERSION,\n        syncProtocolId: SYNC_PROTOCOL_ID\n      });\n    }\n\n    if (body.action === \"delta\") {\n      if (!Array.isArray(body.upserts)) {\n        throw new Error(\n          \"Expected {action:'delta', upserts:[...], deletedIds:[...]}.\"\n        );\n      }\n\n      const deletedIds = Array.isArray(body.deletedIds)\n        ? body.deletedIds.map(String)\n        : [];\n\n      const result = applyQuestionDelta_(\n        body.upserts,\n        deletedIds\n      );\n\n      // Non-question state is deliberately sent as a small sidecar.\n      // This avoids rewriting the question bank when only settings,\n      // answer pools, tests, categories, or history changed.\n      if (body.state && typeof body.state === \"object\") {\n        writeAuxiliaryState_(body.state);\n      }\n\n      return json_({\n        ok: true,\n        action: \"delta\",\n        upserted: result.upserted,\n        deleted: result.deleted,\n        count: result.count,\n        bridgeVersion: BRIDGE_VERSION,\n        syncProtocolId: SYNC_PROTOCOL_ID\n      });\n    }\n\n    throw new Error(\n      \"Unknown action. Expected 'replace' or 'delta'.\"\n    );\n\n  } catch (err) {\n    return json_({\n      ok: false,\n      bridgeVersion: BRIDGE_VERSION,\n      syncProtocolId: SYNC_PROTOCOL_ID,\n      error: String(err && err.message || err)\n    });\n  }\n}\n\n\nfunction spreadsheet_() {\n  return SpreadsheetApp.getActiveSpreadsheet();\n}\n\n\nfunction getOrCreateSheet_(name, headers) {\n  const ss = spreadsheet_();\n  let sh = ss.getSheetByName(name);\n\n  if (!sh) {\n    sh = ss.insertSheet(name);\n    sh.getRange(1, 1, 1, headers.length).setValues([headers]);\n    sh.setFrozenRows(1);\n    sh.getRange(1, 1, 1, headers.length).setFontWeight(\"bold\");\n  }\n\n  return sh;\n}\n\n\nfunction setHeaders_(sh, headers) {\n  sh.getRange(1, 1, 1, headers.length).setValues([headers]);\n  sh.setFrozenRows(1);\n  sh.getRange(1, 1, 1, headers.length).setFontWeight(\"bold\");\n}\n\n\nfunction headerMap_(sh) {\n  const lastCol = Math.max(1, sh.getLastColumn());\n  const row = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0];\n  const map = {};\n  row.forEach((h, i) => {\n    if (String(h).trim()) map[String(h).trim()] = i;\n  });\n  return map;\n}\n\n\nfunction isCanonicalQuestionSheet_(sh) {\n  const map = headerMap_(sh);\n  return (\n    map[\"ID\"] != null &&\n    map[\"Updated At\"] != null &&\n    map[\"Image IDs\"] != null &&\n    map[\"Data JSON\"] != null\n  );\n}\n\n\nfunction readQuestions_() {\n  const sh = getOrCreateSheet_(SHEET_NAME, QUESTION_HEADERS);\n\n  if (isCanonicalQuestionSheet_(sh)) {\n    return readCanonicalQuestions_(sh);\n  }\n\n  // Backward compatibility for the original wide KnowledgeBank layout.\n  return readLegacyQuestions_(sh);\n}\n\n\nfunction readCanonicalQuestions_(sh) {\n  const lastRow = sh.getLastRow();\n  if (lastRow < 2) return [];\n\n  const values = sh.getRange(\n    1,\n    1,\n    lastRow,\n    QUESTION_HEADERS.length\n  ).getDisplayValues();\n\n  const questions = [];\n  const imageMap = readAllImagesById_();\n\n  for (let r = 1; r < values.length; r++) {\n    const id = String(values[r][0] || \"\").trim();\n    if (!id) continue;\n\n    let q = {};\n    try {\n      q = JSON.parse(values[r][3] || \"{}\");\n    } catch (_) {\n      q = {};\n    }\n\n    q.id = id;\n    q.updatedAt = Number(values[r][1]) || Number(q.updatedAt) || Date.now();\n\n    let imageIds = [];\n    try {\n      imageIds = JSON.parse(values[r][2] || \"[]\");\n    } catch (_) {\n      imageIds = [];\n    }\n\n    // Load the image table once per pull instead of scanning the entire\n    // image sheet once for every image. This keeps a 1,000-image bank\n    // effectively linear rather than quadratic.\n    q.images = imageIds\n      .map(id => imageMap[String(id)] || \"\")\n      .filter(Boolean);\n\n    if (q.images.length === 1) {\n      q.image = q.images[0];\n    } else {\n      delete q.image;\n    }\n\n    questions.push(q);\n  }\n\n  return questions;\n}\n\n\nfunction readLegacyQuestions_(sh) {\n  const lastRow = sh.getLastRow();\n  if (lastRow < 2) return [];\n\n  const lastCol = Math.max(sh.getLastColumn(), 1);\n  const values = sh.getRange(\n    1,\n    1,\n    lastRow,\n    lastCol\n  ).getDisplayValues();\n\n  const header = values[0];\n  const col = {};\n  header.forEach((h, i) => {\n    col[String(h).trim()] = i;\n  });\n\n  const get = (row, name) =>\n    col[name] == null\n      ? \"\"\n      : String(row[col[name]] ?? \"\").trim();\n\n  return values.slice(1)\n    .filter(row =>\n      row.some(x => String(x).trim() !== \"\")\n    )\n    .map(row => {\n      const type = get(row, \"Type\").toLowerCase() || \"typed\";\n\n      const q = {\n        id: get(row, \"ID\"),\n        category: get(row, \"Category\"),\n        subcategory: get(row, \"Subcategory\"),\n        topic: get(row, \"Topic\"),\n        question: get(row, \"Question\"),\n        type: type === \"multiple choice\" ? \"mc\" : type,\n        difficulty: get(row, \"Difficulty\") || \"normal\",\n        source: get(row, \"Source\") || \"custom\",\n        updatedAt: Number(get(row, \"Updated At\")) || Date.now()\n      };\n\n      if (q.type === \"mc\") {\n        q.choices = [];\n        for (let i = 1; i <= 25; i++) {\n          const v = get(row, \"Choice \" + i);\n          if (v) q.choices.push(v);\n        }\n\n        q.correct = get(row, \"Correct Answer\");\n        q.correctAnswers = q.correct ? [q.correct] : [];\n        q.multipleCorrect = false;\n\n        q.poolCount =\n          Math.min(\n            25,\n            Math.max(\n              2,\n              parseInt(get(row, \"Pool Count\"), 10) ||\n              q.choices.length ||\n              4\n            )\n          );\n\n        q.displayCount =\n          Math.min(\n            25,\n            Math.max(\n              2,\n              parseInt(get(row, \"Displayed Choices\"), 10) ||\n              4\n            )\n          );\n\n        q.allAbove = /^(true|yes|1)$/i.test(\n          get(row, \"All of the Above\")\n        );\n\n        q.noneAbove = /^(true|yes|1)$/i.test(\n          get(row, \"None of the Above\")\n        );\n\n        const legacyCorrectAnswers = get(row, \"Correct Answers\");\n        if (legacyCorrectAnswers) {\n          try {\n            const parsed = JSON.parse(legacyCorrectAnswers);\n            if (Array.isArray(parsed) && parsed.length) {\n              q.correctAnswers = parsed;\n              q.correct = parsed[0];\n              q.multipleCorrect = parsed.length > 1;\n            }\n          } catch (_) {}\n        }\n      } else {\n        q.answers = [];\n        for (let i = 1; i <= 10; i++) {\n          const v = get(row, \"Accepted Answer \" + i);\n          if (v) q.answers.push(v);\n        }\n        if (!q.answers.length && get(row, \"Correct Answer\")) {\n          q.answers = [get(row, \"Correct Answer\")];\n        }\n      }\n\n      // Read image columns from the intermediate image-capable bridge if\n      // they exist. This lets the new bridge recover those images.\n      q.images = [];\n      for (let i = 1; i <= MAX_IMAGES_PER_QUESTION; i++) {\n        const a = get(row, `Image ${i} A`);\n        const b = get(row, `Image ${i} B`);\n        if (!a && !b) continue;\n        q.images.push(a + b);\n      }\n\n      if (q.images.length === 1) q.image = q.images[0];\n\n      return q;\n    });\n}\n\n\nfunction normalizeQuestionForStorage_(question) {\n  const q = JSON.parse(JSON.stringify(question || {}));\n  q.id = String(q.id || Utilities.getUuid());\n  q.updatedAt = Number(q.updatedAt) || Date.now();\n\n  const images = Array.isArray(q.images)\n    ? q.images.filter(Boolean).slice(0, MAX_IMAGES_PER_QUESTION)\n    : (q.image ? [q.image] : []);\n\n  const imageIds = images.map(imageId_);\n\n  delete q.images;\n  delete q.image;\n  q.imageIds = imageIds;\n\n  return {\n    q: q,\n    images: images.map((data, i) => ({\n      id: imageIds[i],\n      questionId: String(q.id || \"\"),\n      position: i,\n      data: data\n    }))\n  };\n}\n\n\nfunction imageId_(data) {\n  const bytes = Utilities.computeDigest(\n    Utilities.DigestAlgorithm.SHA_256,\n    String(data || \"\"),\n    Utilities.Charset.UTF_8\n  );\n\n  const hex = bytes.map(b => {\n    const n = b < 0 ? b + 256 : b;\n    return (\"0\" + n.toString(16)).slice(-2);\n  }).join(\"\");\n\n  return \"img-\" + hex;\n}\n\n\nfunction imageChunks_(data) {\n  const text = String(data || \"\");\n  const chunks = [];\n\n  for (let i = 0; i < IMAGE_CHUNKS; i++) {\n    chunks.push(\n      text.slice(\n        i * IMAGE_CHUNK_SIZE,\n        (i + 1) * IMAGE_CHUNK_SIZE\n      )\n    );\n  }\n\n  return chunks;\n}\n\n\nfunction imageSheet_() {\n  return getOrCreateSheet_(\n    IMAGE_SHEET_NAME,\n    IMAGE_HEADERS\n  );\n}\n\n\nfunction readAllImagesById_() {\n  const sh = imageSheet_();\n  const lastRow = sh.getLastRow();\n  const map = {};\n\n  if (lastRow < 2) return map;\n\n  const values = sh.getRange(\n    1,\n    1,\n    lastRow,\n    IMAGE_HEADERS.length\n  ).getDisplayValues();\n\n  for (let r = 1; r < values.length; r++) {\n    const id = String(values[r][0] || \"\").trim();\n    if (!id) continue;\n\n    let data = \"\";\n    for(let c = 0; c < IMAGE_CHUNKS; c++){\n      data += String(values[r][4 + c] || \"\");\n    }\n    map[id] = data;\n  }\n\n  return map;\n}\n\n\nfunction imageIndex_() {\n  const sh = imageSheet_();\n  const lastRow = sh.getLastRow();\n  const map = {};\n\n  if (lastRow < 2) return map;\n\n  const values = sh.getRange(\n    1,\n    1,\n    lastRow,\n    IMAGE_HEADERS.length\n  ).getDisplayValues();\n\n  for (let r = 1; r < values.length; r++) {\n    const id = String(values[r][0] || \"\").trim();\n    if (id) map[id] = r + 1;\n  }\n\n  return map;\n}\n\n\nfunction upsertImage_(record, index) {\n  if (!record || !record.id || !record.data) return;\n\n  const sh = imageSheet_();\n  const chunks = imageChunks_(record.data);\n\n  const row = [\n    record.id,\n    record.questionId || \"\",\n    record.position || 0,\n    Date.now(),\n    ...chunks\n  ];\n\n  const existingRow = index[record.id];\n\n  if (existingRow) {\n    sh.getRange(\n      existingRow,\n      1,\n      1,\n      IMAGE_HEADERS.length\n    ).setValues([row]);\n  } else {\n    sh.getRange(\n      sh.getLastRow() + 1,\n      1,\n      1,\n      IMAGE_HEADERS.length\n    ).setValues([row]);\n\n    index[record.id] = sh.getLastRow();\n  }\n}\n\n\nfunction deleteUnreferencedImages_(questions) {\n  const referenced = new Set();\n\n  questions.forEach(q => {\n    const ids = Array.isArray(q.imageIds)\n      ? q.imageIds\n      : [];\n\n    ids.forEach(id => referenced.add(String(id)));\n  });\n\n  const sh = imageSheet_();\n  const lastRow = sh.getLastRow();\n  if (lastRow < 2) return;\n\n  const values = sh.getRange(\n    1,\n    1,\n    lastRow,\n    IMAGE_HEADERS.length\n  ).getDisplayValues();\n\n  const rowsToDelete = [];\n\n  for (let r = 1; r < values.length; r++) {\n    const id = String(values[r][0] || \"\");\n    if (id && !referenced.has(id)) {\n      rowsToDelete.push(r + 1);\n    }\n  }\n\n  for (let i = rowsToDelete.length - 1; i >= 0; i--) {\n    sh.deleteRow(rowsToDelete[i]);\n  }\n}\n\n\nfunction writeQuestionsFull_(questions) {\n  const sh = getOrCreateSheet_(\n    SHEET_NAME,\n    QUESTION_HEADERS\n  );\n\n  // Resolve and store all images before writing question rows.\n  const imageIndex = imageIndex_();\n  const normalized = [];\n\n  for (const original of questions) {\n    const result = normalizeQuestionForStorage_(original);\n    normalized.push(result.q);\n\n    result.images.forEach(image => {\n      upsertImage_(image, imageIndex);\n    });\n  }\n\n  sh.clearContents();\n  setHeaders_(sh, QUESTION_HEADERS);\n\n  if (normalized.length) {\n    const rows = normalized.map(q => [\n      q.id || Utilities.getUuid(),\n      Number(q.updatedAt) || Date.now(),\n      JSON.stringify(q.imageIds || []),\n      JSON.stringify(q)\n    ]);\n\n    sh.getRange(\n      2,\n      1,\n      rows.length,\n      QUESTION_HEADERS.length\n    ).setValues(rows);\n  }\n\n  sh.autoResizeColumns(1, QUESTION_HEADERS.length);\n\n  deleteUnreferencedImages_(normalized);\n}\n\n\nfunction ensureCanonicalQuestions_() {\n  const sh = getOrCreateSheet_(\n    SHEET_NAME,\n    QUESTION_HEADERS\n  );\n\n  if (isCanonicalQuestionSheet_(sh)) return;\n\n  const legacy = readLegacyQuestions_(sh);\n  writeQuestionsFull_(legacy);\n}\n\n\nfunction questionRowIndex_() {\n  const sh = getOrCreateSheet_(\n    SHEET_NAME,\n    QUESTION_HEADERS\n  );\n\n  const index = {};\n  const lastRow = sh.getLastRow();\n\n  if (lastRow < 2) return index;\n\n  const values = sh.getRange(\n    2,\n    1,\n    lastRow - 1,\n    QUESTION_HEADERS.length\n  ).getDisplayValues();\n\n  values.forEach((row, i) => {\n    const id = String(row[0] || \"\").trim();\n    if (id) index[id] = i + 2;\n  });\n\n  return index;\n}\n\n\nfunction applyQuestionDelta_(upserts, deletedIds) {\n  ensureCanonicalQuestions_();\n\n  const sh = getOrCreateSheet_(\n    SHEET_NAME,\n    QUESTION_HEADERS\n  );\n\n  const rowIndex = questionRowIndex_();\n  const imageIndex = imageIndex_();\n\n  let upserted = 0;\n  let deleted = 0;\n\n  // Deletes first, from bottom to top so row indexes remain valid.\n  const deleteRows = deletedIds\n    .map(id => rowIndex[String(id)])\n    .filter(Boolean)\n    .sort((a, b) => b - a);\n\n  for (const row of deleteRows) {\n    sh.deleteRow(row);\n    deleted++;\n  }\n\n  // Rebuild the index after row deletions.\n  const freshIndex = questionRowIndex_();\n\n  for (const original of upserts) {\n    if (!original || !original.id) {\n      throw new Error(\"Every delta upsert must contain an ID.\");\n    }\n\n    const result = normalizeQuestionForStorage_(original);\n\n    result.images.forEach(image => {\n      upsertImage_(image, imageIndex);\n    });\n\n    const q = result.q;\n    const row = [\n      String(q.id),\n      Number(q.updatedAt) || Date.now(),\n      JSON.stringify(q.imageIds || []),\n      JSON.stringify(q)\n    ];\n\n    const existingRow = freshIndex[String(q.id)];\n\n    if (existingRow) {\n      sh.getRange(\n        existingRow,\n        1,\n        1,\n        QUESTION_HEADERS.length\n      ).setValues([row]);\n    } else {\n      const newRow = sh.getLastRow() + 1;\n      sh.getRange(\n        newRow,\n        1,\n        1,\n        QUESTION_HEADERS.length\n      ).setValues([row]);\n      freshIndex[String(q.id)] = newRow;\n    }\n\n    upserted++;\n  }\n\n  // Read only the compact JSON rows to determine which image blobs are\n  // still referenced, then garbage-collect orphaned images.\n  const allQuestions = readStoredQuestionsForImageGC_();\n  deleteUnreferencedImages_(allQuestions);\n\n  return {\n    upserted: upserted,\n    deleted: deleted,\n    count: sh.getLastRow() - 1\n  };\n}\n\n\nfunction readStoredQuestionsForImageGC_() {\n  const sh = getOrCreateSheet_(\n    SHEET_NAME,\n    QUESTION_HEADERS\n  );\n\n  const lastRow = sh.getLastRow();\n  if (lastRow < 2) return [];\n\n  const values = sh.getRange(\n    2,\n    1,\n    lastRow - 1,\n    QUESTION_HEADERS.length\n  ).getDisplayValues();\n\n  return values.map(row => {\n    try {\n      return JSON.parse(row[3] || \"{}\");\n    } catch (_) {\n      return {};\n    }\n  });\n}\n\n\nfunction jsonRowsFromArray_(array) {\n  return (Array.isArray(array) ? array : [])\n    .map((item, index) => {\n      const data = JSON.parse(JSON.stringify(item || {}));\n      const id = String(\n        data.id ||\n        data.testId ||\n        data.name ||\n        stableId_(data, index)\n      );\n      data.id = id;\n      return [\n        id,\n        Number(data.updatedAt) || Date.now(),\n        JSON.stringify(data)\n      ];\n    });\n}\n\n\nfunction stableId_(data, index) {\n  const bytes = Utilities.computeDigest(\n    Utilities.DigestAlgorithm.SHA_256,\n    JSON.stringify(data || {}) + \"|\" + index,\n    Utilities.Charset.UTF_8\n  );\n\n  return \"record-\" + bytes.map(b => {\n    const n = b < 0 ? b + 256 : b;\n    return (\"0\" + n.toString(16)).slice(-2);\n  }).join(\"\").slice(0, 24);\n}\n\n\n\nfunction compactQuestionSnapshot_(question) {\n  const q =\n    JSON.parse(\n      JSON.stringify(\n        question || {}\n      )\n    );\n\n  /*\n   * Images already have their own global storage in the Images sheet.\n   * Keeping their Base64 data here duplicates potentially tens of KB\n   * per question and was the reason a single TestHistory record could\n   * exceed Google's 50,000-character cell limit.\n   *\n   * Keep the image IDs so the relationship is not lost.\n   */\n  const imageIds =\n    Array.isArray(q.imageIds)\n      ? q.imageIds.slice()\n      : [];\n\n  delete q.images;\n  delete q.image;\n\n  if (imageIds.length) {\n    q.imageIds = imageIds;\n  }\n\n  return q;\n}\n\n\nfunction testSnapshotId_(\n  historyId,\n  questionId,\n  position\n) {\n  return (\n    String(historyId || \"\") +\n    \"::\" +\n    String(\n      questionId ||\n      \"\"\n    ) +\n    \"::\" +\n    String(\n      position\n    )\n  );\n}\n\n\nfunction writeTestHistory_(\n  history\n) {\n  const historyRows = [];\n  const snapshotRows = [];\n\n  const list =\n    Array.isArray(history)\n      ? history\n      : [];\n\n  list.forEach(\n    record => {\n\n      const r =\n        JSON.parse(\n          JSON.stringify(\n            record || {}\n          )\n        );\n\n      const historyId =\n        String(\n          r.id ||\n          Utilities.getUuid()\n        );\n\n      r.id =\n        historyId;\n\n      const snapshots =\n        Array.isArray(\n          r.questionSnapshots\n        )\n          ? r.questionSnapshots\n          : [];\n\n      const snapshotIds = [];\n\n      snapshots.forEach(\n        (question, position) => {\n\n          const questionId =\n            String(\n              question &&\n              question.id ||\n              (\n                Array.isArray(\n                  r.questionIds\n                )\n                  ? r.questionIds[position]\n                  : \"\"\n              ) ||\n              \"\"\n            );\n\n          const snapshotId =\n            testSnapshotId_(\n              historyId,\n              questionId,\n              position\n            );\n\n          snapshotIds.push(\n            snapshotId\n          );\n\n          const compact =\n            compactQuestionSnapshot_(\n              question\n            );\n\n          snapshotRows.push([\n            snapshotId,\n            historyId,\n            questionId,\n            Number(\n              r.updatedAt\n            ) ||\n              Date.now(),\n            JSON.stringify(\n              compact\n            )\n          ]);\n        }\n      );\n\n      delete r.questionSnapshots;\n\n      /*\n       * This keeps the history record small. The full historical question\n       * data lives one-row-per-question in TestSnapshots.\n       */\n      r.questionSnapshotIds =\n        snapshotIds;\n\n      historyRows.push([\n        historyId,\n        Number(\n          r.updatedAt\n        ) ||\n          Date.now(),\n        JSON.stringify(r)\n      ]);\n    }\n  );\n\n\n  const historySheet =\n    getOrCreateSheet_(\n      HISTORY_SHEET_NAME,\n      JSON_HEADERS\n    );\n\n  historySheet.clearContents();\n\n  setHeaders_(\n    historySheet,\n    JSON_HEADERS\n  );\n\n  validateSheetRows_(\n    HISTORY_SHEET_NAME,\n    JSON_HEADERS,\n    historyRows\n  );\n\n  if (historyRows.length) {\n\n    historySheet\n      .getRange(\n        2,\n        1,\n        historyRows.length,\n        JSON_HEADERS.length\n      )\n      .setValues(\n        historyRows\n      );\n  }\n\n\n  const snapshotSheet =\n    getOrCreateSheet_(\n      TEST_SNAPSHOT_SHEET_NAME,\n      TEST_SNAPSHOT_HEADERS\n    );\n\n  snapshotSheet.clearContents();\n\n  setHeaders_(\n    snapshotSheet,\n    TEST_SNAPSHOT_HEADERS\n  );\n\n  validateSheetRows_(\n    TEST_SNAPSHOT_SHEET_NAME,\n    TEST_SNAPSHOT_HEADERS,\n    snapshotRows\n  );\n\n  if (snapshotRows.length) {\n\n    snapshotSheet\n      .getRange(\n        2,\n        1,\n        snapshotRows.length,\n        TEST_SNAPSHOT_HEADERS.length\n      )\n      .setValues(\n        snapshotRows\n      );\n  }\n}\n\n\nfunction readTestSnapshots_() {\n\n  const sh =\n    getOrCreateSheet_(\n      TEST_SNAPSHOT_SHEET_NAME,\n      TEST_SNAPSHOT_HEADERS\n    );\n\n  const lastRow =\n    sh.getLastRow();\n\n  const map = {};\n\n  if (lastRow < 2) {\n    return map;\n  }\n\n  const values =\n    sh\n      .getRange(\n        2,\n        1,\n        lastRow - 1,\n        TEST_SNAPSHOT_HEADERS.length\n      )\n      .getDisplayValues();\n\n  values.forEach(\n    row => {\n\n      const id =\n        String(\n          row[0] ||\n          \"\"\n        ).trim();\n\n      if (!id) {\n        return;\n      }\n\n      try {\n\n        map[id] =\n          JSON.parse(\n            row[4] ||\n            \"{}\"\n          );\n\n      } catch (_) {\n\n        map[id] = {};\n      }\n    }\n  );\n\n  return map;\n}\n\n\nfunction readTestHistory_() {\n\n  const records =\n    readJsonArraySheet_(\n      HISTORY_SHEET_NAME\n    );\n\n  const snapshots =\n    readTestSnapshots_();\n\n  return records.map(\n    record => {\n\n      if (\n        !record ||\n        typeof record !== \"object\"\n      ) {\n        return record;\n      }\n\n      /*\n       * New format: hydrate snapshots from their dedicated rows.\n       */\n      if (\n        Array.isArray(\n          record.questionSnapshotIds\n        )\n      ) {\n\n        record.questionSnapshots =\n          record.questionSnapshotIds\n            .map(\n              id =>\n                snapshots[\n                  String(id)\n                ]\n            )\n            .filter(Boolean);\n\n        delete record.questionSnapshotIds;\n      }\n\n      /*\n       * Legacy records that already contain questionSnapshots remain\n       * readable. They are simply migrated to the new layout the next\n       * time the app pushes them.\n       */\n\n      return record;\n    }\n  );\n}\n\n\nfunction migrateLegacyTestHistory_(\n  history\n) {\n  /*\n   * This is intentionally just the new writer. It preserves the app's\n   * local representation while changing only the Sheets representation.\n   */\n  writeTestHistory_(\n    history\n  );\n}\n\n\nfunction writeJsonArraySheet_(name, array) {\n  const sh = getOrCreateSheet_(name, JSON_HEADERS);\n  sh.clearContents();\n  setHeaders_(sh, JSON_HEADERS);\n\n  const rows = jsonRowsFromArray_(array);\n\n  if (rows.length) {\n    sh.getRange(\n      2,\n      1,\n      rows.length,\n      JSON_HEADERS.length\n    ).setValues(rows);\n  }\n}\n\n\nfunction readJsonArraySheet_(name) {\n  const sh = getOrCreateSheet_(name, JSON_HEADERS);\n  const lastRow = sh.getLastRow();\n\n  if (lastRow < 2) return [];\n\n  const values = sh.getRange(\n    2,\n    1,\n    lastRow - 1,\n    JSON_HEADERS.length\n  ).getDisplayValues();\n\n  return values.map(row => {\n    try {\n      return JSON.parse(row[2] || \"{}\");\n    } catch (_) {\n      return {};\n    }\n  });\n}\n\n\nfunction writeSettings_(settings) {\n  const sh = getOrCreateSheet_(\n    SETTINGS_SHEET_NAME,\n    SETTINGS_HEADERS\n  );\n\n  sh.clearContents();\n  setHeaders_(sh, SETTINGS_HEADERS);\n\n  if (!settings || typeof settings !== \"object\") return;\n\n  const rows = Object.keys(settings).map(key => [\n    key,\n    Date.now(),\n    JSON.stringify(settings[key])\n  ]);\n\n  if (rows.length) {\n    sh.getRange(\n      2,\n      1,\n      rows.length,\n      SETTINGS_HEADERS.length\n    ).setValues(rows);\n  }\n}\n\n\nfunction readSettings_() {\n  const sh = getOrCreateSheet_(\n    SETTINGS_SHEET_NAME,\n    SETTINGS_HEADERS\n  );\n\n  const lastRow = sh.getLastRow();\n  const out = {};\n\n  if (lastRow < 2) return out;\n\n  const values = sh.getRange(\n    2,\n    1,\n    lastRow - 1,\n    SETTINGS_HEADERS.length\n  ).getDisplayValues();\n\n  values.forEach(row => {\n    const key = String(row[0] || \"\").trim();\n    if (!key) return;\n\n    try {\n      out[key] = JSON.parse(row[2] || \"null\");\n    } catch (_) {\n      out[key] = row[2];\n    }\n  });\n\n  return out;\n}\n\n\nfunction writeAuxiliaryState_(state) {\n  if (!state || typeof state !== \"object\") return;\n\n  if (Array.isArray(state.answerPools)) {\n    writeJsonArraySheet_(\n      ANSWER_POOL_SHEET_NAME,\n      state.answerPools\n    );\n  }\n\n  if (Array.isArray(state.testHistory)) {\n    writeTestHistory_(\n      state.testHistory\n    );\n  }\n\n  if (Array.isArray(state.customTests)) {\n    writeJsonArraySheet_(\n      CUSTOM_TEST_SHEET_NAME,\n      state.customTests\n    );\n  }\n\n  if (Array.isArray(state.customCategories)) {\n    writeJsonArraySheet_(\n      CATEGORY_SHEET_NAME,\n      state.customCategories.map(name => ({\n        id: String(name),\n        name: String(name)\n      }))\n    );\n  }\n\n  if (\n    state.testSettings &&\n    typeof state.testSettings === \"object\"\n  ) {\n    writeSettings_(state.testSettings);\n  }\n}\n\n\nfunction readFullState_() {\n  const questions = readQuestions_();\n\n  return {\n    questions: questions,\n    answerPools: readJsonArraySheet_(ANSWER_POOL_SHEET_NAME),\n    testHistory: readTestHistory_(),\n    customTests: readJsonArraySheet_(CUSTOM_TEST_SHEET_NAME),\n    customCategories: readJsonArraySheet_(CATEGORY_SHEET_NAME)\n      .map(x => x.name || x.id)\n      .filter(Boolean),\n    testSettings: readSettings_(),\n    schemaVersion: 4\n  };\n}\n\n\nfunction json_(obj) {\n  return ContentService\n    .createTextOutput(JSON.stringify(obj))\n    .setMimeType(ContentService.MimeType.JSON);\n}\n";
+const KNOWLEDGE_SPEEDRUN_SUPABASE_SETUP_SQL="-- Knowledge Speedrun Supabase setup\n-- Run this once in Supabase: SQL Editor -> New query -> Run.\n\ncreate table if not exists public.knowledge_speedrun_questions (\n  user_id uuid not null references auth.users(id) on delete cascade,\n  question_id text not null,\n  data jsonb not null,\n  updated_at bigint not null default 0,\n  primary key (user_id, question_id)\n);\n\ncreate index if not exists knowledge_speedrun_questions_updated_idx\n  on public.knowledge_speedrun_questions (user_id, updated_at);\n\nalter table public.knowledge_speedrun_questions enable row level security;\n\ndrop policy if exists \"ks_questions_select_own\" on public.knowledge_speedrun_questions;\ndrop policy if exists \"ks_questions_insert_own\" on public.knowledge_speedrun_questions;\ndrop policy if exists \"ks_questions_update_own\" on public.knowledge_speedrun_questions;\ndrop policy if exists \"ks_questions_delete_own\" on public.knowledge_speedrun_questions;\n\ncreate policy \"ks_questions_select_own\"\n  on public.knowledge_speedrun_questions\n  for select to authenticated\n  using ((select auth.uid()) = user_id);\n\ncreate policy \"ks_questions_insert_own\"\n  on public.knowledge_speedrun_questions\n  for insert to authenticated\n  with check ((select auth.uid()) = user_id);\n\ncreate policy \"ks_questions_update_own\"\n  on public.knowledge_speedrun_questions\n  for update to authenticated\n  using ((select auth.uid()) = user_id)\n  with check ((select auth.uid()) = user_id);\n\ncreate policy \"ks_questions_delete_own\"\n  on public.knowledge_speedrun_questions\n  for delete to authenticated\n  using ((select auth.uid()) = user_id);\n\ngrant select, insert, update, delete\n  on public.knowledge_speedrun_questions\n  to authenticated;\n\ncreate table if not exists public.knowledge_speedrun_meta (\n  user_id uuid primary key references auth.users(id) on delete cascade,\n  schema_version integer not null default 1,\n  bank_updated_at bigint not null default 0,\n  updated_at timestamptz not null default now(),\n  state jsonb not null default '{}'::jsonb\n);\n\nalter table public.knowledge_speedrun_meta\n  add column if not exists state jsonb not null default '{}'::jsonb;\n\nalter table public.knowledge_speedrun_meta enable row level security;\n\ndrop policy if exists \"ks_meta_select_own\" on public.knowledge_speedrun_meta;\ndrop policy if exists \"ks_meta_insert_own\" on public.knowledge_speedrun_meta;\ndrop policy if exists \"ks_meta_update_own\" on public.knowledge_speedrun_meta;\ndrop policy if exists \"ks_meta_delete_own\" on public.knowledge_speedrun_meta;\n\ncreate policy \"ks_meta_select_own\"\n  on public.knowledge_speedrun_meta\n  for select to authenticated\n  using ((select auth.uid()) = user_id);\n\ncreate policy \"ks_meta_insert_own\"\n  on public.knowledge_speedrun_meta\n  for insert to authenticated\n  with check ((select auth.uid()) = user_id);\n\ncreate policy \"ks_meta_update_own\"\n  on public.knowledge_speedrun_meta\n  for update to authenticated\n  using ((select auth.uid()) = user_id)\n  with check ((select auth.uid()) = user_id);\n\ncreate policy \"ks_meta_delete_own\"\n  on public.knowledge_speedrun_meta\n  for delete to authenticated\n  using ((select auth.uid()) = user_id);\n\ngrant select, insert, update, delete\n  on public.knowledge_speedrun_meta\n  to authenticated;\n\ninsert into storage.buckets (\n  id, name, public, file_size_limit, allowed_mime_types\n)\nvalues (\n  'knowledge-speedrun-images',\n  'knowledge-speedrun-images',\n  false,\n  65536,\n  array['image/webp','image/jpeg','image/png','image/gif']\n)\non conflict (id) do update set\n  public = excluded.public,\n  file_size_limit = excluded.file_size_limit,\n  allowed_mime_types = excluded.allowed_mime_types;\n\ndrop policy if exists \"ks_images_select_own\" on storage.objects;\ndrop policy if exists \"ks_images_insert_own\" on storage.objects;\ndrop policy if exists \"ks_images_update_own\" on storage.objects;\ndrop policy if exists \"ks_images_delete_own\" on storage.objects;\n\ncreate policy \"ks_images_select_own\"\n  on storage.objects\n  for select to authenticated\n  using (\n    bucket_id = 'knowledge-speedrun-images'\n    and (storage.foldername(name))[1] = (select auth.uid())::text\n  );\n\ncreate policy \"ks_images_insert_own\"\n  on storage.objects\n  for insert to authenticated\n  with check (\n    bucket_id = 'knowledge-speedrun-images'\n    and (storage.foldername(name))[1] = (select auth.uid())::text\n  );\n\ncreate policy \"ks_images_update_own\"\n  on storage.objects\n  for update to authenticated\n  using (\n    bucket_id = 'knowledge-speedrun-images'\n    and (storage.foldername(name))[1] = (select auth.uid())::text\n  )\n  with check (\n    bucket_id = 'knowledge-speedrun-images'\n    and (storage.foldername(name))[1] = (select auth.uid())::text\n  );\n\ncreate policy \"ks_images_delete_own\"\n  on storage.objects\n  for delete to authenticated\n  using (\n    bucket_id = 'knowledge-speedrun-images'\n    and (storage.foldername(name))[1] = (select auth.uid())::text\n  );\n\ncreate or replace function public.knowledge_speedrun_storage_stats()\nreturns table (\n  question_count bigint,\n  database_bytes bigint,\n  image_count bigint,\n  image_bytes bigint\n)\nlanguage sql\nsecurity invoker\nset search_path = public, storage\nas $$\n  with q as (\n    select\n      count(*)::bigint as question_count,\n      coalesce(sum(pg_column_size(ksq)),0)::bigint as question_bytes\n    from public.knowledge_speedrun_questions ksq\n    where ksq.user_id = auth.uid()\n  ),\n  m as (\n    select coalesce(sum(pg_column_size(ksm)),0)::bigint as meta_bytes\n    from public.knowledge_speedrun_meta ksm\n    where ksm.user_id = auth.uid()\n  ),\n  i as (\n    select\n      count(*)::bigint as image_count,\n      coalesce(sum((metadata->>'size')::bigint),0)::bigint as image_bytes\n    from storage.objects so\n    where so.bucket_id = 'knowledge-speedrun-images'\n      and (storage.foldername(so.name))[1] = auth.uid()::text\n  )\n  select\n    q.question_count,\n    (q.question_bytes + m.meta_bytes)::bigint as database_bytes,\n    i.image_count,\n    i.image_bytes\n  from q cross join m cross join i;\n$$;\n\ngrant execute on function public.knowledge_speedrun_storage_stats()\n  to authenticated;\n";
+
+function setupDownload(name,text,type="text/plain;charset=utf-8"){
+  const blob=new Blob([text],{type});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+async function setupCopy(text,label){
+  const status=$("setupActionStatus");
+  try{
+    await navigator.clipboard.writeText(text);
+    if(status){status.textContent=`✓ ${label} copied to clipboard.`;status.className="muted small sync-success";}
+  }catch(err){
+    if(status){status.textContent=`Could not copy automatically. ${err.message}`;status.className="muted small sync-error";}
+  }
+}
+function currentSetupAppUrl(){
+  const u=new URL(window.location.href);
+  u.hash="";
+  u.search="";
+  return u.toString();
+}
+const setupCurrentAppUrl=$("setupCurrentAppUrl");
+if(setupCurrentAppUrl)setupCurrentAppUrl.textContent=currentSetupAppUrl();
+$("copySupaSql").onclick=()=>setupCopy(KNOWLEDGE_SPEEDRUN_SUPABASE_SETUP_SQL,"Supabase setup SQL");
+$("downloadSupaSql").onclick=()=>setupDownload("KnowledgeSpeedrun_Supabase_Setup.sql",KNOWLEDGE_SPEEDRUN_SUPABASE_SETUP_SQL,"application/sql;charset=utf-8");
+$("copyCurrentAppUrl").onclick=()=>setupCopy(currentSetupAppUrl(),"Current app URL");
+$("copyGoogleBridge").onclick=()=>setupCopy(KNOWLEDGE_SPEEDRUN_GOOGLE_BRIDGE_SOURCE,"Google Apps Script bridge");
+$("downloadGoogleBridge").onclick=()=>setupDownload("KnowledgeSpeedrunSheetBridge.gs",KNOWLEDGE_SPEEDRUN_GOOGLE_BRIDGE_SOURCE,"text/plain;charset=utf-8");
 
 document.querySelectorAll("[data-sync-subtab]").forEach(btn=>{
   btn.onclick=()=>{
@@ -7050,6 +7643,472 @@ document.querySelectorAll("[data-sync-subtab]").forEach(btn=>{
     $("sync"+target[0].toUpperCase()+target.slice(1)+"Panel").classList.remove("hidden");
   };
 });
+
+/* ---------- Full ZIP backup + device-local recovery ---------- */
+const FULL_BACKUP_VERSION=1;
+const RECOVERY_DB_NAME="knowledge-speedrun-recovery-v1";
+const RECOVERY_DB_STORE="recovery";
+const RECOVERY_RECORD_KEY="latest";
+let recoveryDbPromise=null;
+
+function recoveryOpenDb(){
+  if(recoveryDbPromise)return recoveryDbPromise;
+  recoveryDbPromise=new Promise((resolve,reject)=>{
+    if(!("indexedDB" in window)){resolve(null);return;}
+    const req=indexedDB.open(RECOVERY_DB_NAME,1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(RECOVERY_DB_STORE)){
+        db.createObjectStore(RECOVERY_DB_STORE,{keyPath:"id"});
+      }
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+  return recoveryDbPromise;
+}
+
+async function recoveryGet(){
+  const db=await recoveryOpenDb();
+  if(!db)return null;
+  return await new Promise((resolve,reject)=>{
+    const tx=db.transaction(RECOVERY_DB_STORE,"readonly");
+    const req=tx.objectStore(RECOVERY_DB_STORE).get(RECOVERY_RECORD_KEY);
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+async function recoveryPut(record){
+  const db=await recoveryOpenDb();
+  if(!db)throw new Error("IndexedDB is not available in this browser.");
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(RECOVERY_DB_STORE,"readwrite");
+    tx.objectStore(RECOVERY_DB_STORE).put(record);
+    tx.oncomplete=resolve;
+    tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error);
+  });
+}
+
+async function recoveryDelete(){
+  const db=await recoveryOpenDb();
+  if(!db)return;
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(RECOVERY_DB_STORE,"readwrite");
+    tx.objectStore(RECOVERY_DB_STORE).delete(RECOVERY_RECORD_KEY);
+    tx.oncomplete=resolve;
+    tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error);
+  });
+}
+
+function backupTimestampForFile(){
+  const d=new Date();
+  const p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
+}
+
+async function backupHashBytes(bytes){
+  const digest=await crypto.subtle.digest("SHA-256",bytes);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+function backupMimeForPath(path){
+  const p=String(path).toLowerCase();
+  if(p.endsWith(".png"))return "image/png";
+  if(p.endsWith(".jpg")||p.endsWith(".jpeg"))return "image/jpeg";
+  if(p.endsWith(".gif"))return "image/gif";
+  return "image/webp";
+}
+
+function backupExtForDataUrl(src){
+  const m=String(src).match(/^data:image\/([^;,]+)/i);
+  const ext=(m?.[1]||"webp").toLowerCase();
+  return ext==="jpeg"?"jpg":ext;
+}
+
+function backupCsvEscape(value){
+  const text=value==null?"":String(value);
+  return /[",\r\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;
+}
+
+function fullBackupDataCsv(questionRecords,auxState,manifest){
+  const rows=[["Record Type","ID","Data JSON"]];
+  rows.push(["manifest","manifest",JSON.stringify(manifest)]);
+  rows.push(["app_state","state",JSON.stringify(auxState)]);
+  questionRecords.forEach(q=>{
+    rows.push(["question",String(q.id||""),JSON.stringify(q)]);
+  });
+  return rows.map(row=>row.map(backupCsvEscape).join(",")).join("\r\n");
+}
+
+async function buildFullBackupFiles(){
+  await hydrateBankImages();
+
+  const imageFiles=new Map();
+  const questionRecords=[];
+
+  for(const original of bank){
+    const q=JSON.parse(JSON.stringify(original));
+    const images=getQuestionImages(original);
+    const paths=[];
+
+    for(const src of images){
+      const blob=await imageDataUrlToBlob(src);
+      const bytes=new Uint8Array(await blob.arrayBuffer());
+      const hash=await backupHashBytes(bytes);
+      const ext=backupExtForDataUrl(src);
+      const path=`images/${hash}.${ext}`;
+      paths.push(path);
+      if(!imageFiles.has(path))imageFiles.set(path,bytes);
+    }
+
+    delete q.images;
+    delete q.image;
+    delete q.imageRefs;
+    q.backupImageFiles=paths;
+    questionRecords.push(q);
+  }
+
+  const manifest={
+    format:"Knowledge Speedrun Full Backup",
+    backupVersion:FULL_BACKUP_VERSION,
+    appVersion:APP_VERSION,
+    exportedAt:new Date().toISOString(),
+    schemaVersion:4,
+    questionCount:questionRecords.length,
+    imageCount:imageFiles.size
+  };
+  const aux=getAuxiliarySyncState();
+  const csv=fullBackupDataCsv(questionRecords,aux,manifest);
+
+  const files=new Map();
+  files.set("knowledge-speedrun-data.csv",new TextEncoder().encode(csv));
+  files.set("manifest.json",new TextEncoder().encode(JSON.stringify(manifest,null,2)));
+  imageFiles.forEach((bytes,path)=>files.set(path,bytes));
+  return {files,manifest};
+}
+
+let ZIP_CRC_TABLE=null;
+function zipCrc32(bytes){
+  if(!ZIP_CRC_TABLE){
+    ZIP_CRC_TABLE=new Uint32Array(256);
+    for(let n=0;n<256;n++){
+      let c=n;
+      for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);
+      ZIP_CRC_TABLE[n]=c>>>0;
+    }
+  }
+  let crc=0xFFFFFFFF;
+  for(const b of bytes)crc=ZIP_CRC_TABLE[(crc^b)&0xFF]^(crc>>>8);
+  return (crc^0xFFFFFFFF)>>>0;
+}
+function zipU16(view,offset,value){view.setUint16(offset,value,true);}
+function zipU32(view,offset,value){view.setUint32(offset,value>>>0,true);}
+function zipDosDateTime(date=new Date()){
+  const year=Math.max(1980,date.getFullYear());
+  const time=(date.getHours()<<11)|(date.getMinutes()<<5)|(date.getSeconds()>>1);
+  const day=((year-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate();
+  return {time,day};
+}
+function zipConcat(parts){
+  const total=parts.reduce((n,p)=>n+p.length,0);
+  const out=new Uint8Array(total);
+  let off=0;
+  for(const p of parts){out.set(p,off);off+=p.length;}
+  return out;
+}
+function createStoredZip(fileMap){
+  const enc=new TextEncoder();
+  const locals=[],centrals=[];
+  let offset=0;
+  const dt=zipDosDateTime();
+
+  for(const [name,dataValue] of fileMap){
+    const data=dataValue instanceof Uint8Array?dataValue:new Uint8Array(dataValue);
+    const nameBytes=enc.encode(name);
+    const crc=zipCrc32(data);
+
+    const local=new Uint8Array(30+nameBytes.length);
+    const lv=new DataView(local.buffer);
+    zipU32(lv,0,0x04034b50);
+    zipU16(lv,4,20);
+    zipU16(lv,6,0x0800);
+    zipU16(lv,8,0);
+    zipU16(lv,10,dt.time);
+    zipU16(lv,12,dt.day);
+    zipU32(lv,14,crc);
+    zipU32(lv,18,data.length);
+    zipU32(lv,22,data.length);
+    zipU16(lv,26,nameBytes.length);
+    zipU16(lv,28,0);
+    local.set(nameBytes,30);
+    locals.push(local,data);
+
+    const central=new Uint8Array(46+nameBytes.length);
+    const cv=new DataView(central.buffer);
+    zipU32(cv,0,0x02014b50);
+    zipU16(cv,4,20);
+    zipU16(cv,6,20);
+    zipU16(cv,8,0x0800);
+    zipU16(cv,10,0);
+    zipU16(cv,12,dt.time);
+    zipU16(cv,14,dt.day);
+    zipU32(cv,16,crc);
+    zipU32(cv,20,data.length);
+    zipU32(cv,24,data.length);
+    zipU16(cv,28,nameBytes.length);
+    zipU16(cv,30,0);
+    zipU16(cv,32,0);
+    zipU16(cv,34,0);
+    zipU16(cv,36,0);
+    zipU32(cv,38,0);
+    zipU32(cv,42,offset);
+    central.set(nameBytes,46);
+    centrals.push(central);
+
+    offset+=local.length+data.length;
+  }
+
+  const centralSize=centrals.reduce((n,p)=>n+p.length,0);
+  const eocd=new Uint8Array(22);
+  const ev=new DataView(eocd.buffer);
+  zipU32(ev,0,0x06054b50);
+  zipU16(ev,4,0);zipU16(ev,6,0);
+  zipU16(ev,8,centrals.length);zipU16(ev,10,centrals.length);
+  zipU32(ev,12,centralSize);
+  zipU32(ev,16,offset);
+  zipU16(ev,20,0);
+
+  return zipConcat([...locals,...centrals,eocd]);
+}
+
+function parseStoredZip(bytes){
+  const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  const view=new DataView(data.buffer,data.byteOffset,data.byteLength);
+  let eocd=-1;
+  for(let i=data.length-22;i>=Math.max(0,data.length-65557);i--){
+    if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}
+  }
+  if(eocd<0)throw new Error("ZIP end record not found.");
+
+  const count=view.getUint16(eocd+10,true);
+  let pos=view.getUint32(eocd+16,true);
+  const dec=new TextDecoder();
+  const files=new Map();
+
+  for(let n=0;n<count;n++){
+    if(view.getUint32(pos,true)!==0x02014b50)throw new Error("Invalid ZIP directory.");
+    const method=view.getUint16(pos+10,true);
+    const compressed=view.getUint32(pos+20,true);
+    const uncompressed=view.getUint32(pos+24,true);
+    const nameLen=view.getUint16(pos+28,true);
+    const extraLen=view.getUint16(pos+30,true);
+    const commentLen=view.getUint16(pos+32,true);
+    const localOffset=view.getUint32(pos+42,true);
+    const name=dec.decode(data.slice(pos+46,pos+46+nameLen));
+    if(method!==0)throw new Error(`Unsupported compressed ZIP entry: ${name}`);
+
+    if(view.getUint32(localOffset,true)!==0x04034b50)throw new Error(`Invalid ZIP entry: ${name}`);
+    const localNameLen=view.getUint16(localOffset+26,true);
+    const localExtraLen=view.getUint16(localOffset+28,true);
+    const start=localOffset+30+localNameLen+localExtraLen;
+    const fileBytes=data.slice(start,start+compressed);
+    if(fileBytes.length!==uncompressed)throw new Error(`Invalid stored ZIP entry length: ${name}`);
+    files.set(name,fileBytes);
+    pos+=46+nameLen+extraLen+commentLen;
+  }
+  return files;
+}
+
+function parseFullBackupCsv(text){
+  const rows=parseCsv(text);
+  if(rows.length<2)throw new Error("Backup CSV is empty.");
+  const header=rows[0].map(x=>String(x).trim());
+  const typeI=header.indexOf("Record Type");
+  const idI=header.indexOf("ID");
+  const jsonI=header.indexOf("Data JSON");
+  if(typeI<0||idI<0||jsonI<0)throw new Error("This ZIP does not contain a valid Knowledge Speedrun data CSV.");
+
+  const questions=[];
+  let aux=null,manifest=null;
+  for(const row of rows.slice(1)){
+    const type=String(row[typeI]||"").trim();
+    const raw=String(row[jsonI]||"");
+    if(!type||!raw)continue;
+    let obj;
+    try{obj=JSON.parse(raw);}catch(_){throw new Error(`Backup CSV contains invalid JSON in record type "${type}".`);}
+    if(type==="question")questions.push(obj);
+    else if(type==="app_state")aux=obj;
+    else if(type==="manifest")manifest=obj;
+  }
+  if(!manifest||manifest.format!=="Knowledge Speedrun Full Backup")throw new Error("Backup manifest is missing or invalid.");
+  if(!aux)throw new Error("Backup app-state record is missing.");
+  return {questions,aux,manifest};
+}
+
+async function restoreFullBackupZip(file){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const files=parseStoredZip(bytes);
+  const csvBytes=files.get("knowledge-speedrun-data.csv");
+  if(!csvBytes)throw new Error("knowledge-speedrun-data.csv was not found in this backup.");
+  const parsed=parseFullBackupCsv(new TextDecoder().decode(csvBytes));
+
+  const restoredQuestions=[];
+  for(const raw of parsed.questions){
+    const q=JSON.parse(JSON.stringify(raw));
+    const paths=Array.isArray(q.backupImageFiles)?q.backupImageFiles:[];
+    const images=[];
+    for(const path of paths){
+      const imageBytes=files.get(path);
+      if(!imageBytes)throw new Error(`Backup image is missing: ${path}`);
+      const blob=new Blob([imageBytes],{type:backupMimeForPath(path)});
+      images.push(await blobToDataUrl(blob));
+    }
+    delete q.backupImageFiles;
+    q.images=images;
+    delete q.image;
+    delete q.imageRefs;
+    restoredQuestions.push(q);
+  }
+
+  const state={questions:restoredQuestions,...parsed.aux};
+  await applySyncState(state);
+  return {
+    questions:restoredQuestions.length,
+    images:parsed.manifest.imageCount||0,
+    exportedAt:parsed.manifest.exportedAt||""
+  };
+}
+
+async function fullStateSnapshotForRecovery(){
+  await hydrateBankImages();
+  return JSON.parse(JSON.stringify(getSyncState()));
+}
+
+async function refreshLocalRecoveryStatus(){
+  const el=$("localRecoveryStatus");
+  if(!el)return;
+  try{
+    const rec=await recoveryGet();
+    if(!rec){
+      el.textContent="No local recovery backup found on this device.";
+      el.className="muted small sync-neutral";
+      return;
+    }
+    el.textContent=`Local recovery backup found: ${new Date(rec.savedAt).toLocaleString()} • ${rec.questionCount.toLocaleString()} questions • ${formatStorageBytes(rec.bytes||0)}`;
+    el.className="muted small sync-success";
+  }catch(err){
+    el.textContent=`Could not check local recovery backup: ${err.message}`;
+    el.className="muted small sync-error";
+  }
+}
+
+$("downloadFullZip").onclick=async()=>{
+  const status=$("fullZipStatus");
+  try{
+    status.textContent="Building full backup…";
+    status.className="muted small sync-pending";
+    const {files,manifest}=await buildFullBackupFiles();
+    const zip=createStoredZip(files);
+    const blob=new Blob([zip],{type:"application/zip"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=`KnowledgeSpeedrun_Backup_${backupTimestampForFile()}.zip`;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    status.textContent=`✓ Backup created: ${manifest.questionCount.toLocaleString()} questions, ${manifest.imageCount.toLocaleString()} images, ${formatStorageBytes(blob.size)}.`;
+    status.className="muted small sync-success";
+  }catch(err){
+    status.textContent=`Backup failed: ${err.message}`;
+    status.className="muted small sync-error";
+  }
+};
+
+$("uploadFullZip").onclick=()=>$("uploadFullZipFile").click();
+$("uploadFullZipFile").onchange=async e=>{
+  const file=e.target.files?.[0];
+  if(!file)return;
+  const status=$("fullZipStatus");
+  try{
+    if(!confirm("Restore this full backup?\n\nThis will replace the current local question bank and auxiliary app data on this device. Cloud backends will not be changed until you explicitly push/sync afterward."))return;
+    status.textContent="Restoring full backup…";
+    status.className="muted small sync-pending";
+    const result=await restoreFullBackupZip(file);
+    status.textContent=`✓ Restored ${result.questions.toLocaleString()} questions and ${result.images.toLocaleString()} images from the ZIP backup.`;
+    status.className="muted small sync-success";
+  }catch(err){
+    status.textContent=`Restore failed: ${err.message}`;
+    status.className="muted small sync-error";
+  }finally{
+    e.target.value="";
+  }
+};
+
+$("saveLocalRecovery").onclick=async()=>{
+  const status=$("localRecoveryStatus");
+  try{
+    status.textContent="Saving local recovery backup…";
+    status.className="muted small sync-pending";
+    const state=await fullStateSnapshotForRecovery();
+    const text=JSON.stringify(state);
+    const record={
+      id:RECOVERY_RECORD_KEY,
+      savedAt:new Date().toISOString(),
+      questionCount:Array.isArray(state.questions)?state.questions.length:0,
+      bytes:new Blob([text]).size,
+      state
+    };
+    await recoveryPut(record);
+    await refreshLocalRecoveryStatus();
+  }catch(err){
+    status.textContent=`Local recovery backup failed: ${err.message}`;
+    status.className="muted small sync-error";
+  }
+};
+
+$("recoverLocalRecovery").onclick=async()=>{
+  const status=$("localRecoveryStatus");
+  try{
+    const rec=await recoveryGet();
+    if(!rec){
+      status.textContent="No local recovery backup was found on this device.";
+      status.className="muted small sync-error";
+      return;
+    }
+    if(!confirm(`Recover the local backup saved ${new Date(rec.savedAt).toLocaleString()}?\n\nThis will replace the current local bank on this device. Cloud backends will not be changed until you explicitly sync.`))return;
+    status.textContent="Recovering local backup…";
+    status.className="muted small sync-pending";
+    await applySyncState(rec.state);
+    status.textContent=`✓ Recovered ${rec.questionCount.toLocaleString()} questions from the local backup saved ${new Date(rec.savedAt).toLocaleString()}.`;
+    status.className="muted small sync-success";
+  }catch(err){
+    status.textContent=`Local recovery failed: ${err.message}`;
+    status.className="muted small sync-error";
+  }
+};
+
+$("deleteLocalRecovery").onclick=async()=>{
+  const status=$("localRecoveryStatus");
+  try{
+    const rec=await recoveryGet();
+    if(!rec){
+      status.textContent="No local recovery backup was found on this device.";
+      status.className="muted small sync-neutral";
+      return;
+    }
+    if(!confirm("Delete the local recovery backup from this device?"))return;
+    await recoveryDelete();
+    await refreshLocalRecoveryStatus();
+  }catch(err){
+    status.textContent=`Could not delete local recovery backup: ${err.message}`;
+    status.className="muted small sync-error";
+  }
+};
+
+refreshLocalRecoveryStatus().catch(()=>{});
+
 $("exportCsv2").onclick=()=>$("exportCsv").click();
 $("importCsvBtn2").onclick=()=>$("importCsvFile").click();
 $("importCsvFile2").onchange=e=>{
