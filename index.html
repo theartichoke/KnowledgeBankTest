@@ -1068,12 +1068,9 @@
     <div class="question-total-stat">Total questions: <strong data-question-total>0</strong></div>
     <div class="bank-capacity" data-bank-capacity>
       <div class="bank-capacity-summary">
-        <span>Images: <strong data-image-total>0</strong> / <strong data-image-limit>5,000</strong></span>
+        <span>Total images: <strong data-image-total>0</strong></span>
       </div>
-      <div class="bank-capacity-track" role="progressbar" aria-label="Image storage capacity" aria-valuemin="0" aria-valuemax="5000" aria-valuenow="0">
-        <div class="bank-capacity-fill" data-image-capacity-fill></div>
-      </div>
-      <p class="bank-capacity-note" data-image-capacity-note>0% of image capacity used.</p>
+      <p class="bank-capacity-note">Image capacity is determined by the active storage backend, not a fixed app-wide limit.</p>
     </div>
     <label>Category</label>
     <select id="cat"></select>
@@ -1227,7 +1224,6 @@
         <button id="sheetPull">Pull From Google Sheet</button>
         <button id="sheetPush">Push Local Questions to Google Sheet</button>
       </div>
-      <div id="googleImageLimitWarning" class="storage-warning storage-critical hidden"></div>
       <details class="sync-advanced">
         <summary>Advanced Sync</summary>
         <div class="actions" style="margin-top:10px;">
@@ -1550,12 +1546,9 @@
     <div class="question-total-stat">Total questions: <strong data-question-total>0</strong></div>
     <div class="bank-capacity" data-bank-capacity>
       <div class="bank-capacity-summary">
-        <span>Images: <strong data-image-total>0</strong> / <strong data-image-limit>5,000</strong></span>
+        <span>Total images: <strong data-image-total>0</strong></span>
       </div>
-      <div class="bank-capacity-track" role="progressbar" aria-label="Image storage capacity" aria-valuemin="0" aria-valuemax="5000" aria-valuenow="0">
-        <div class="bank-capacity-fill" data-image-capacity-fill></div>
-      </div>
-      <p class="bank-capacity-note" data-image-capacity-note>0% of image capacity used.</p>
+      <p class="bank-capacity-note">Image capacity is determined by the active storage backend, not a fixed app-wide limit.</p>
     </div>
     <div class="actions">
       <button id="export">Export Backup</button>
@@ -1604,7 +1597,6 @@ const BUILTIN_DATA_KEY="knowledge-speedrun-builtin-data-v1";
 
 const $=id=>document.getElementById(id);
 
-const MAX_STORED_IMAGES=5000;
 const GOOGLE_SHEETS_MAX_IMAGES=500;
 const MAX_IMAGES_PER_QUESTION=3;
 const IMAGE_DB_NAME="knowledge-speedrun-images-v2";
@@ -2296,15 +2288,11 @@ async function addCompressedImages(files){
   if(!list.length)return;
 
   const existingCount=getAllStoredImageEntries().length;
-  const remainingGlobal=Math.max(0,MAX_STORED_IMAGES-existingCount);
+  const remainingGlobal=Number.MAX_SAFE_INTEGER;
   const remainingQuestion=Math.max(0,MAX_IMAGES_PER_QUESTION-editingImageDraft.length);
   const remaining=Math.min(remainingGlobal,remainingQuestion);
   if(!remaining){
-    if(remainingQuestion<=0){
-      alert(`A question can contain a maximum of ${MAX_IMAGES_PER_QUESTION} images.`);
-    }else{
-      alert(`The app supports a maximum of ${MAX_STORED_IMAGES} stored images.`);
-    }
+    alert(`A question can contain a maximum of ${MAX_IMAGES_PER_QUESTION} images.`);
     return;
   }
 
@@ -2322,7 +2310,7 @@ async function addCompressedImages(files){
   if(list.length>remaining){
     const reason = remainingQuestion <= remaining
       ? `This question is limited to ${MAX_IMAGES_PER_QUESTION} images.`
-      : `The ${MAX_STORED_IMAGES}-image bank limit was reached.`;
+: "No additional image could be added.";
     alert(`Only ${remaining} more image${remaining===1?"":"s"} could be added. ${reason}`);
   }
   editingImageDraft.push(...additions);
@@ -3782,34 +3770,12 @@ function getStoredImageCount(){
 function updateBankCapacityDisplays(){
   const questionTotal=bank.length;
   const imageTotal=getStoredImageCount();
-  const imageLimit=MAX_STORED_IMAGES;
-  const percent=imageLimit>0
-    ? Math.min(100,(imageTotal/imageLimit)*100)
-    : 0;
-  const percentText=percent<0.1 && imageTotal>0
-    ? "<0.1"
-    : percent.toFixed(percent>=10?1:2).replace(/\.0+$/,'').replace(/(\.\d*[1-9])0+$/,'$1');
 
   document.querySelectorAll("[data-question-total]").forEach(el=>{
     el.textContent=questionTotal.toLocaleString();
   });
-
-  document.querySelectorAll("[data-bank-capacity]").forEach(box=>{
-    const iTotal=box.querySelector("[data-image-total]");
-    const iLimit=box.querySelector("[data-image-limit]");
-    const fill=box.querySelector("[data-image-capacity-fill]");
-    const note=box.querySelector("[data-image-capacity-note]");
-    const track=box.querySelector(".bank-capacity-track");
-
-    if(iTotal)iTotal.textContent=imageTotal.toLocaleString();
-    if(iLimit)iLimit.textContent=imageLimit.toLocaleString();
-    if(fill)fill.style.width=`${percent}%`;
-    if(note)note.textContent=`${percentText}% of image capacity used.`;
-    if(track){
-      track.setAttribute("aria-valuemax",String(imageLimit));
-      track.setAttribute("aria-valuenow",String(imageTotal));
-      track.setAttribute("aria-valuetext",`${imageTotal.toLocaleString()} of ${imageLimit.toLocaleString()} images used`);
-    }
+  document.querySelectorAll("[data-image-total]").forEach(el=>{
+    el.textContent=imageTotal.toLocaleString();
   });
 }
 
@@ -6318,7 +6284,7 @@ function downloadText(filename,text,type){
 
 
 /* ---------- Google Sheets bridge sync ---------- */
-const APP_VERSION="2026.08.24.62";
+const APP_VERSION="2026.08.24.63";
 const SYNC_PROTOCOL_ID="KS-SYNC-5";
 const REQUIRED_BRIDGE_COMPAT="KS-SYNC-5";
 function setAppVersionDisplays(){
