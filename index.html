@@ -752,6 +752,40 @@
   #pwaStatusText{
     color:#777 !important;
   }
+
+.sync-backend-badge{display:inline-block;padding:6px 10px;border:1px solid #365a73;border-radius:8px;background:#17242d;color:#b9d9ee;font-size:12px;font-weight:700;letter-spacing:.02em}
+
+.supa-password-wrap{position:relative;}
+.supa-password-wrap input{padding-right:46px;}
+.supa-password-eye{
+  position:absolute;
+  right:7px;
+  top:50%;
+  transform:translateY(-50%);
+  width:34px;
+  height:34px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  background:transparent;
+  color:#aaa;
+  font-size:1.05rem;
+  line-height:1;
+}
+.supa-password-eye:hover{background:#252525;color:#eee;}
+
+.supa-confirmation-info{
+  margin:10px 0;
+  padding:10px 12px;
+  border:1px solid #566b7a;
+  border-radius:8px;
+  background:#172129;
+  color:#c7dbe8;
+}
+.supa-confirmation-info strong{display:block;margin-bottom:4px;color:#dbeefa;}
+#supaRedirectDisplay{word-break:break-all;color:#9fc7ff;}
 </style>
 <style>
 .pool-editor-grid{align-items:start;}
@@ -1107,9 +1141,10 @@
 <section id="dataSync" class="panel">
   <div class="card">
     <h2>Data Sync</h2>
-    <p class="muted">Keep one master question bank in Google Sheets, while this app keeps a local offline copy. If the Google connection ever stops working, the CSV tools below remain available.</p>
+    <p class="muted">Choose either cloud backend explicitly. Google Sheets remains fully supported and unchanged; Supabase is the new database + image-storage option. The browser keeps the local offline copy either way.</p>
     <div class="subtabs" id="dataSyncSubtabs">
       <button class="subtab active" data-sync-subtab="google">Google Sheets</button>
+      <button class="subtab" data-sync-subtab="supabase">Supabase</button>
       <button class="subtab" data-sync-subtab="csv">Manual CSV</button>
       <button class="subtab" data-sync-subtab="help">Instructions</button>
     </div>
@@ -1142,6 +1177,74 @@
 </div>
 
       <p class="muted small"><strong>Important:</strong> Pull replaces the app's local question bank with the sheet after confirmation. The first Push is a full sync; later Pushes send only changed/new questions and deletions. Images are stored separately in small chunks. Your JSON/CSV backups remain separate.</p>
+    </div>
+  </div>
+
+  <div class="sync-subpanel hidden" id="syncSupabasePanel">
+    <div class="card">
+      <h3>Supabase</h3>
+      <p class="muted small">A separate cloud backend using a real Postgres database and private image storage. Google Sheets is not modified when you use these controls.</p>
+      <div class="sync-backend-badge">KnowledgeBankTest • private per-user storage</div>
+      <form id="supaAuthForm" autocomplete="on" onsubmit="return false;">
+        <div class="quick-settings-grid" style="margin-top:12px;">
+          <div>
+            <label for="supaEmail">Supabase email</label>
+            <input id="supaEmail"
+                   name="username"
+                   type="email"
+                   autocomplete="username"
+                   inputmode="email"
+                   autocapitalize="none"
+                   autocorrect="off"
+                   spellcheck="false"
+                   placeholder="you@example.com">
+          </div>
+          <div>
+            <label for="supaPassword">Supabase password</label>
+            <div class="supa-password-wrap">
+              <input id="supaPassword"
+                     name="password"
+                     type="password"
+                     autocomplete="current-password"
+                     autocapitalize="none"
+                     autocorrect="off"
+                     spellcheck="false"
+                     placeholder="Password">
+              <button id="supaPasswordToggle"
+                      class="supa-password-eye"
+                      type="button"
+                      aria-label="Show password"
+                      aria-pressed="false"
+                      title="Show password">👁</button>
+            </div>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="supaSignIn" type="button">Sign In</button>
+          <button id="supaSignUp" type="button">Create Account</button>
+          <button id="supaSignOut" type="button">Sign Out</button>
+        </div>
+      </form>
+      <p id="supaAuthStatus" class="muted small sync-neutral">Not signed in.</p>
+      <div id="supaConfirmationInfo" class="supa-confirmation-info hidden">
+        <strong>Email confirmation required</strong>
+        <div id="supaConfirmationText" class="small"></div>
+      </div>
+      <p class="muted small">Confirmation emails return to: <code id="supaRedirectDisplay"></code></p>
+      <hr style="border:0;border-top:1px solid #333;margin:18px 0;">
+      <div class="actions">
+        <button id="supaTest">Test Connection</button>
+        <button id="supaVerify">Verify Local vs Supabase</button>
+        <button id="supaPull">Pull From Supabase</button>
+        <button id="supaPush">Push Local Changes to Supabase</button>
+      </div>
+      <details class="sync-advanced">
+        <summary>Advanced Sync</summary>
+        <div class="actions" style="margin-top:10px;"><button id="supaForcePush">Force Full Update</button></div>
+        <p class="muted small">Replaces your Supabase question bank with this browser's complete local bank and uploads its images. It does not touch Google Sheets.</p>
+      </details>
+      <p id="supaSyncStatus" class="muted small sync-neutral">Ready after sign-in.</p>
+      <p class="muted small"><strong>Important:</strong> Supabase images are private. The app stores them as files and keeps downloaded copies in IndexedDB for offline tests. Google and Supabase are intentionally separate backends.</p>
     </div>
   </div>
 
@@ -5864,7 +5967,7 @@ function downloadText(filename,text,type){
 
 
 /* ---------- Google Sheets bridge sync ---------- */
-const APP_VERSION="2026.08.24.47";
+const APP_VERSION="2026.08.24.50";
 const SYNC_PROTOCOL_ID="KS-SYNC-5";
 const REQUIRED_BRIDGE_COMPAT="KS-SYNC-5";
 function setAppVersionDisplays(){
@@ -6759,6 +6862,184 @@ $("sheetPush").onclick=async()=>{
   }
 };
 
+
+
+/* ---------- Supabase dual-backend sync ---------- */
+const SUPA_URL="https://pbyoizjmmtolokujhtlz.supabase.co";
+const SUPA_KEY="sb_publishable_gfUsIGAudP0fUnsGdBmkNw_9UyYghSk";
+const SUPA_SESSION_KEY="knowledge-speedrun-supabase-session-v1";
+const SUPA_BASELINE_KEY="knowledge-speedrun-supabase-baseline-v1";
+const SUPA_BUCKET="knowledge-speedrun-images";
+let supaSession=JSON.parse(localStorage.getItem(SUPA_SESSION_KEY)||"null");
+let supaBaseline=JSON.parse(localStorage.getItem(SUPA_BASELINE_KEY)||"null");
+
+function supaRedirectUrl(){
+  // Always return to the exact deployed app page, without stale auth/query fragments.
+  const u=new URL(window.location.href);
+  u.hash="";
+  u.search="";
+  return u.toString();
+}
+function supaShowConfirmation(message){
+  const box=$("supaConfirmationInfo");
+  const text=$("supaConfirmationText");
+  if(!box||!text)return;
+  text.textContent=message;
+  box.classList.remove("hidden");
+}
+function supaHideConfirmation(){
+  const box=$("supaConfirmationInfo");
+  if(box)box.classList.add("hidden");
+}
+
+function supaHeaders(extra={}){
+  const token=supaSession?.access_token||SUPA_KEY;
+  return {apikey:SUPA_KEY,Authorization:`Bearer ${token}`,...extra};
+}
+function supaAuthStatus(msg,ok=true){
+  const e=$("supaAuthStatus"); if(!e)return; e.textContent=msg;
+  e.className="muted small "+(ok===false?"sync-error":"sync-success");
+}
+function supaStatus(msg,ok=true){
+  const e=$("supaSyncStatus"); if(!e)return; e.textContent=msg;
+  e.className="muted small "+(ok===false?"sync-error":ok==="pending"?"sync-pending":"sync-success");
+}
+function supaUserId(){return supaSession?.user?.id||null;}
+function supaRequireAuth(){if(!supaUserId())throw new Error("Sign in to Supabase first.");}
+function supaPersistSession(session){supaSession=session||null;if(session)localStorage.setItem(SUPA_SESSION_KEY,JSON.stringify(session));else localStorage.removeItem(SUPA_SESSION_KEY);supaRenderAuth();}
+function supaRenderAuth(){
+  const redirectDisplay=$("supaRedirectDisplay");
+  if(redirectDisplay)redirectDisplay.textContent=supaRedirectUrl();
+
+  if(supaUserId()){
+    const user=supaSession.user||{};
+    const verified=!!(user.email_confirmed_at||user.confirmed_at);
+    supaAuthStatus(
+      `Signed in as ${user.email||supaUserId()}. ${verified?"Email verified ✓":"Email verification pending"}`
+    );
+    if(verified)supaHideConfirmation();
+  }else{
+    const e=$("supaAuthStatus");
+    if(e){
+      e.textContent="Not signed in.";
+      e.className="muted small sync-neutral";
+    }
+  }
+}
+async function supaAuth(path,body){
+  const r=await fetch(`${SUPA_URL}/auth/v1/${path}`,{method:"POST",headers:{apikey:SUPA_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.msg||d.message||d.error_description||`Supabase auth HTTP ${r.status}`); return d;
+}
+async function supaRefreshIfNeeded(){
+  if(!supaSession?.refresh_token)return;
+  const exp=Number(supaSession.expires_at||0); if(exp && exp*1000>Date.now()+60000)return;
+  const d=await supaAuth("token?grant_type=refresh_token",{refresh_token:supaSession.refresh_token}); supaPersistSession(d);
+}
+async function supaFetch(path,options={}){
+  await supaRefreshIfNeeded(); supaRequireAuth();
+  const r=await fetch(`${SUPA_URL}${path}`,{...options,headers:supaHeaders(options.headers||{})});
+  if(!r.ok){const t=await r.text().catch(()=>"");throw new Error(`Supabase HTTP ${r.status}${t?`: ${t.slice(0,300)}`:""}`);} return r;
+}
+async function supaHashDataUrl(dataUrl){
+  const blob=await imageDataUrlToBlob(dataUrl); const digest=await crypto.subtle.digest("SHA-256",await blob.arrayBuffer());
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function supaExtForDataUrl(src){const m=String(src).match(/^data:image\/([^;,]+)/i);const x=(m?.[1]||"webp").toLowerCase();return x==="jpeg"?"jpg":x;}
+async function supaPrepareQuestion(q,uploadImages=false){
+  const copy=JSON.parse(JSON.stringify(q)); const images=getQuestionImages(q); const imageIds=[];
+  for(const src of images){
+    const hash=await supaHashDataUrl(src), ext=supaExtForDataUrl(src), path=`${supaUserId()}/${hash}.${ext}`; imageIds.push(path);
+    if(uploadImages){
+      const blob=await imageDataUrlToBlob(src);
+      const r=await fetch(`${SUPA_URL}/storage/v1/object/${SUPA_BUCKET}/${path}`,{method:"POST",headers:supaHeaders({"Content-Type":blob.type||"image/webp","x-upsert":"true"}),body:blob});
+      if(!r.ok)throw new Error(`Image upload failed (${r.status}): ${(await r.text()).slice(0,250)}`);
+    }
+  }
+  delete copy.images;delete copy.image;delete copy.imageRefs;delete copy.imageIds;copy.supaImagePaths=imageIds;return copy;
+}
+async function supaHydrateQuestion(data){
+  const q=JSON.parse(JSON.stringify(data||{})); const paths=Array.isArray(q.supaImagePaths)?q.supaImagePaths:[]; const images=[];
+  for(const path of paths){
+    const r=await supaFetch(`/storage/v1/object/${SUPA_BUCKET}/${path}`); images.push(await blobToDataUrl(await r.blob()));
+  }
+  delete q.supaImagePaths;q.images=images;return q;
+}
+async function supaGetRemoteState(){
+  supaRequireAuth(); const uid=supaUserId(); let rows=[],from=0;
+  while(true){
+    const r=await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(uid)}&select=question_id,data,updated_at&order=question_id&offset=${from}&limit=1000`);
+    const page=await r.json();rows.push(...page);if(page.length<1000)break;from+=1000;
+  }
+  const mr=await supaFetch(`/rest/v1/knowledge_speedrun_meta?user_id=eq.${encodeURIComponent(uid)}&select=state&limit=1`); const meta=(await mr.json())[0]?.state||{};
+  const questions=[];for(const row of rows)questions.push(await supaHydrateQuestion(row.data));
+  return {questions,...meta};
+}
+async function supaUpsertMeta(){
+  const body={user_id:supaUserId(),schema_version:1,bank_updated_at:Date.now(),state:getAuxiliarySyncState()};
+  await supaFetch(`/rest/v1/knowledge_speedrun_meta?on_conflict=user_id`,{method:"POST",headers:{"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify(body)});
+}
+async function supaUpsertQuestions(questions){
+  for(let i=0;i<questions.length;i+=100){
+    const chunk=[];for(const q of questions.slice(i,i+100)){const data=await supaPrepareQuestion(q,true);chunk.push({user_id:supaUserId(),question_id:String(q.id),data,updated_at:Number(q.updatedAt)||0});}
+    await supaFetch(`/rest/v1/knowledge_speedrun_questions?on_conflict=user_id,question_id`,{method:"POST",headers:{"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify(chunk)});
+  }
+}
+function supaMarkBaseline(){supaBaseline=currentQuestionVersions();localStorage.setItem(SUPA_BASELINE_KEY,JSON.stringify(supaBaseline));}
+function supaChangedQuestions(){if(!supaBaseline)return [...bank];return bank.filter(q=>q?.id && Number(supaBaseline[q.id])!==Number(q.updatedAt||0));}
+function supaDeletedIds(){if(!supaBaseline)return [];const ids=new Set(bank.map(q=>String(q.id)));return Object.keys(supaBaseline).filter(id=>!ids.has(id));}
+async function supaDeleteQuestionIds(ids){for(let i=0;i<ids.length;i+=100){const vals=ids.slice(i,i+100).map(x=>`"${String(x).replaceAll('"','\\"')}"`).join(",");await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}&question_id=in.(${encodeURIComponent(vals)})`,{method:"DELETE"});}}
+
+$("supaSignIn").onclick=async()=>{try{const d=await supaAuth("token?grant_type=password",{email:$("supaEmail").value.trim(),password:$("supaPassword").value});supaPersistSession(d);supaHideConfirmation();supaStatus("✓ Signed in. Supabase sync is ready.");}catch(e){supaStatus(e.message,false);}};
+$("supaSignUp").onclick=async()=>{
+  try{
+    const email=$("supaEmail").value.trim();
+    const password=$("supaPassword").value;
+    const redirect=supaRedirectUrl();
+    const d=await supaAuth(
+      `signup?redirect_to=${encodeURIComponent(redirect)}`,
+      {email,password}
+    );
+    if(d.access_token){
+      supaPersistSession(d);
+      supaHideConfirmation();
+      supaStatus("✓ Account created, email verified, and signed in.");
+    }else{
+      supaShowConfirmation(
+        `We sent a confirmation email to ${email}. Open it and press Confirm. `+
+        `After verification, Supabase will return you to Knowledge Speedrun. Then press Sign In.`
+      );
+      supaStatus("Account created — waiting for email confirmation.","pending");
+    }
+  }catch(e){
+    supaStatus(e.message,false);
+  }
+};
+$("supaSignOut").onclick=async()=>{try{if(supaSession?.access_token)await fetch(`${SUPA_URL}/auth/v1/logout`,{method:"POST",headers:supaHeaders()});}catch(_){}supaPersistSession(null);supaStatus("Signed out.");};
+$("supaTest").onclick=async()=>{try{supaStatus("Testing Supabase…","pending");await supaRefreshIfNeeded();supaRequireAuth();const r=await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}&select=question_id&limit=1`);await r.json();supaStatus("✓ Connected to Supabase. Database and authentication are responding.");}catch(e){supaStatus(e.message,false);}};
+$("supaVerify").onclick=async()=>{try{supaStatus("Verifying local data against Supabase…","pending");await hydrateBankImages();const remote=await supaGetRemoteState();const report=syncVerificationReport(getSyncState(),remote);if(report.match)supaStatus(`✓ Verified: local data matches Supabase. ${report.questions.localCount} questions and all auxiliary data match.`);else{const p=[];if(report.questions.missingOnline.length)p.push(`${report.questions.missingOnline.length} local missing online`);if(report.questions.missingLocal.length)p.push(`${report.questions.missingLocal.length} online missing locally`);if(report.questions.changed.length)p.push(`${report.questions.changed.length} questions differ`);if(report.auxiliary.length)p.push(`auxiliary differs: ${report.auxiliary.join(", ")}`);supaStatus(`✗ Verification failed: ${p.join("; ")}.`,false);}}catch(e){supaStatus(e.message,false);}};
+$("supaPull").onclick=async()=>{try{if(!confirm("Pulling from Supabase will replace this browser's local data. Google Sheets will not be changed. Continue?"))return;supaStatus("Pulling from Supabase…","pending");const remote=await supaGetRemoteState();await applySyncState(remote);supaMarkBaseline();supaStatus(`Pulled ${bank.length} questions from Supabase. Images were cached locally for offline use.`);}catch(e){supaStatus(e.message,false);}};
+$("supaPush").onclick=async()=>{try{supaRequireAuth();const changed=supaChangedQuestions(),deleted=supaDeletedIds();if(!changed.length&&!deleted.length){await supaUpsertMeta();supaStatus("Supabase is already up to date.");return;}if(!confirm(`Push ${changed.length} changed/new question(s) and ${deleted.length} deletion(s) to Supabase?\n\nGoogle Sheets will not be changed.`))return;supaStatus("Pushing local changes to Supabase…","pending");await hydrateBankImages();await supaUpsertQuestions(changed);await supaDeleteQuestionIds(deleted);await supaUpsertMeta();supaMarkBaseline();supaStatus(`✓ Supabase push complete: ${changed.length} upserted, ${deleted.length} deleted.`);}catch(e){supaStatus(e.message,false);}};
+$("supaForcePush").onclick=async()=>{try{supaRequireAuth();if(!confirm(`FORCE FULL SUPABASE UPDATE\n\nReplace the Supabase bank with all ${bank.length} local questions and their images?\n\nGoogle Sheets will NOT be changed.`))return;supaStatus("Forcing full Supabase update…","pending");await hydrateBankImages();await supaFetch(`/rest/v1/knowledge_speedrun_questions?user_id=eq.${encodeURIComponent(supaUserId())}`,{method:"DELETE"});await supaUpsertQuestions(bank);await supaUpsertMeta();supaMarkBaseline();supaStatus(`✓ Full Supabase update complete: ${bank.length} questions uploaded.`);}catch(e){supaStatus(e.message,false);}};
+
+const supaPasswordToggle=$("supaPasswordToggle");
+if(supaPasswordToggle){
+  supaPasswordToggle.addEventListener("click",()=>{
+    const input=$("supaPassword");
+    if(!input)return;
+    const reveal=input.type==="password";
+    input.type=reveal?"text":"password";
+    supaPasswordToggle.setAttribute("aria-pressed",reveal?"true":"false");
+    supaPasswordToggle.setAttribute("aria-label",reveal?"Hide password":"Show password");
+    supaPasswordToggle.title=reveal?"Hide password":"Show password";
+    supaPasswordToggle.textContent=reveal?"🙈":"👁";
+    input.focus({preventScroll:true});
+    try{
+      const end=input.value.length;
+      input.setSelectionRange(end,end);
+    }catch(_){}
+  });
+}
+supaRenderAuth();
 
 document.querySelectorAll("[data-sync-subtab]").forEach(btn=>{
   btn.onclick=()=>{
