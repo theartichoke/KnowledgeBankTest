@@ -1,4 +1,4 @@
-const CACHE_NAME = "knowledge-speedrun-app-v2026.08.23.4";
+const CACHE_NAME = "knowledge-speedrun-app-v2026.08.23.5";
 
 const APP_SHELL = [
   "./",
@@ -19,14 +19,17 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(
-        keys
-          .filter(key =>
-            key.startsWith("knowledge-speedrun-app-") &&
-            key !== CACHE_NAME
-          )
-          .map(key => caches.delete(key))
-      ))
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(
+              key =>
+                key.startsWith("knowledge-speedrun-app-") &&
+                key !== CACHE_NAME
+            )
+            .map(key => caches.delete(key))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
@@ -42,6 +45,8 @@ self.addEventListener("fetch", event => {
 
   if (request.method !== "GET") return;
 
+  // For page navigation, try the live GitHub Pages version first.
+  // If the phone is offline, fall back to the cached app.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -59,6 +64,8 @@ self.addEventListener("fetch", event => {
     return;
   }
 
+  // For other app files, also prefer the live version and cache
+  // successful responses for offline use.
   event.respondWith(
     fetch(request)
       .then(response => {
