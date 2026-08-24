@@ -332,6 +332,17 @@
   .subcategory-group summary { padding:9px 12px; background:#191919; cursor:pointer; list-style-position:inside; }
   .subcategory-group summary:hover { background:#242424; }
   .subcategory-group table { background:#151515; }
+  .topic-group { margin:0 0 6px; border:1px solid #292929; border-radius:7px; overflow:hidden; }
+  .topic-group summary { padding:8px 11px; background:#141414; cursor:pointer; list-style-position:inside; }
+  .topic-group summary:hover { background:#1f1f1f; }
+  .built-in-tag { display:inline-block; margin-left:7px; padding:2px 6px; border:1px solid #555; border-radius:999px; font-size:.65em; font-weight:600; letter-spacing:.04em; opacity:.75; vertical-align:middle; }
+  .builtin-test-card { border:1px solid #333; border-radius:9px; padding:12px 14px; margin:0 0 10px; background:#181818; }
+  .builtin-test-card:last-child { margin-bottom:0; }
+  .builtin-test-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .builtin-test-head .name { flex:1; font-weight:700; }
+  .builtin-test-tags { display:flex; gap:5px; flex-wrap:wrap; margin:7px 0; }
+  .builtin-test-tag { padding:3px 7px; border:1px solid #383838; border-radius:999px; font-size:.75em; color:#bbb; }
+
   .difficulty { display:inline-block; padding:3px 7px; border:1px solid #444; border-radius:999px; font-size:.85rem; white-space:nowrap; }
   .difficulty.super-easy { border-color:#5a9; }
   .difficulty.easy { border-color:#789; }
@@ -402,7 +413,7 @@
 </head>
 <body>
 <div class="wrap">
-<h1>Knowledge Speedrun <span class="app-version">v2026.08.23.4</span></h1>
+<h1>Knowledge Speedrun <span class="app-version">v2026.08.23.5</span></h1>
 <p class="muted">Your personal question bank. Add anything. Then let the app randomly interrogate you.</p>
 
 <div class="tab-groups">
@@ -413,6 +424,7 @@
         <div class="tab-group-buttons">
           <button class="tab active" data-tab="test">New Test</button>
           <button class="tab" data-tab="existing">Existing Tests</button>
+          <button class="tab" data-tab="builtinTests">Built-in Tests</button>
           <button class="tab" id="testHistoryTab" type="button">Test History</button>
         </div>
       </div>
@@ -463,6 +475,16 @@
           </div>
           <p id="testSubcategorySelection" class="selection-status">Selected: <strong>None</strong></p>
           <p class="muted small">Select none for all subcategories. Ctrl/Cmd-click to select multiple.</p>
+        </div>
+        <div>
+          <label>Topics</label>
+          <select id="testTopic" multiple size="4"></select>
+          <div class="selection-buttons">
+            <button type="button" id="selectAllTopics">Select All</button>
+            <button type="button" id="clearTopics">Clear Selection</button>
+          </div>
+          <p id="testTopicSelection" class="selection-status">Selected: <strong>None</strong></p>
+          <p class="muted small">Select none for all topics. Ctrl/Cmd-click to select multiple.</p>
         </div>
         <div>
           <label>Difficulty</label>
@@ -585,9 +607,13 @@
     <label>Category</label>
     <select id="cat"></select>
     <label>Subcategory</label>
-    <input id="subcat" list="subcategoryOptions" placeholder="Optional, e.g. Multiplication">
+    <input id="subcat" list="subcategoryOptions" placeholder="Optional, e.g. Calculus">
     <datalist id="subcategoryOptions"></datalist>
     <p class="muted small">Subcategories belong under the selected category. Existing subcategories appear as suggestions.</p>
+    <label>Topic</label>
+    <input id="topic" list="topicOptions" placeholder="Optional, e.g. Integrals">
+    <datalist id="topicOptions"></datalist>
+    <p class="muted small">Topics are the third organizational level under a subcategory.</p>
     <label>Difficulty</label>
     <select id="difficulty">
       <option value="super easy">Super Easy</option>
@@ -775,7 +801,7 @@
       <p id="sheetSyncStatus" class="muted small">Not configured.</p>
       <p id="sheetBridgeVersion" class="muted small">Bridge version: not checked yet.</p>
 <div id="pwaStatus" class="muted small" style="margin-top:6px;">
-  App v2026.08.23.4 • PWA: checking…
+  App v2026.08.23.5 • PWA: checking…
   <button id="pwaInstallButton" type="button" hidden style="margin-left:8px;">Install App</button>
 </div>
 
@@ -824,6 +850,14 @@
   </div>
 </section>
 
+
+<section id="builtinTests" class="panel">
+  <div class="card">
+    <h2>Built-in Tests <span class="built-in-tag">BUILT-IN</span></h2>
+    <p class="muted small">These tests come with the app. They are read-only configurations, but they use the same question bank as your custom tests. If you add more questions to their topics, the built-in tests automatically use them.</p>
+    <div id="builtinTestList"></div>
+  </div>
+</section>
 
 <section id="existing" class="panel">
   <div class="card">
@@ -939,6 +973,8 @@ testHistory=testHistory.map(r=>({...r,historyType:r.historyType||(r.testId?"save
 let testSettings=Object.assign({maxRandomHistory:10},JSON.parse(localStorage.getItem(TEST_SETTINGS_KEY)||"{}"));
 const CUSTOM_TEST_KEY="knowledge-speedrun-custom-tests-v1";
 let customTests=JSON.parse(localStorage.getItem(CUSTOM_TEST_KEY)||"[]");
+const BUILTIN_TESTS_VERSION="1";
+const BUILTIN_DATA_KEY="knowledge-speedrun-builtin-data-v1";
 
 const $=id=>document.getElementById(id);
 function saveBank(){
@@ -1078,7 +1114,7 @@ if(!localStorage.getItem(MATH_DEMO_KEY)){
     const answer=a*b;
     mathQuestions.push({
       id:`demo-math-multiplication-${a}-${b}`,
-      category:"Mathematics",subcategory:"Multiplication",
+      category:"Mathematics",subcategory:"Multiplication",topic:"1–12 Multiplication",source:"builtin",
       question:`What is ${a} × ${b}?`,type:"mc",
       difficulty:mathDifficulty(a,b),
       choices:[String(answer),String(answer+1),String(Math.max(0,answer-1)),String(answer+2)],
@@ -1152,6 +1188,185 @@ if(!localStorage.getItem(STARTER_CLEANUP_KEY)){
   localStorage.setItem(STARTER_CLEANUP_KEY,"1");
 }
 
+
+/* ---------- THREE-LEVEL HIERARCHY + BUILT-IN KNOWLEDGE ---------- */
+// Saved questions remain one flat array. Category/subcategory/topic are only
+// indexing fields; this keeps storage compact while allowing arbitrarily deep
+// organization later if we ever need it.
+const BUILTIN_DATA_SEED_KEY="knowledge-speedrun-builtin-data-v2";
+
+function makeTyped(id,category,subcategory,topic,question,answers,difficulty="normal"){
+  return {id,category,subcategory,topic,question,type:"typed",difficulty,answers,source:"builtin",updatedAt:Date.now()};
+}
+function makeMC(id,category,subcategory,topic,question,choices,correct,difficulty="normal"){
+  const corrects=Array.isArray(correct)?correct:[correct];
+  return {id,category,subcategory,topic,question,type:"mc",difficulty,choices,correct:corrects[0],correctAnswers:corrects,poolCount:choices.length,displayCount:Math.min(4,choices.length),multipleCorrect:corrects.length>1,minCorrectAnswers:corrects.length>1?1:1,maxCorrectAnswers:corrects.length>1?corrects.length:1,allAbove:false,noneAbove:false,source:"builtin",updatedAt:Date.now()};
+}
+
+const BUILTIN_QUESTIONS=[
+  // Greek mythology
+  makeMC("builtin-greek-zeus","Mythology","Greek","Olympians","Who is the king of the Greek gods?",["Zeus","Apollo","Ares","Hermes"],"Zeus","easy"),
+  makeMC("builtin-greek-athena","Mythology","Greek","Olympians","Which goddess is associated with wisdom and strategic warfare?",["Athena","Aphrodite","Demeter","Hestia"],"Athena","easy"),
+  makeMC("builtin-greek-poseidon","Mythology","Greek","Olympians","Who is the Greek god associated with the sea?",["Poseidon","Hades","Hephaestus","Hermes"],"Poseidon","easy"),
+  makeMC("builtin-greek-hades","Mythology","Greek","Underworld","Who rules the Greek underworld?",["Hades","Thanatos","Hermes","Ares"],"Hades","easy"),
+  makeMC("builtin-greek-persephone","Mythology","Greek","Underworld","Who is Persephone's mother?",["Demeter","Hera","Athena","Artemis"],"Demeter","normal"),
+  makeMC("builtin-greek-hermes","Mythology","Greek","Olympians","Which Greek god is the messenger of the gods?",["Hermes","Apollo","Dionysus","Hephaestus"],"Hermes","easy"),
+  makeMC("builtin-greek-apollo","Mythology","Greek","Olympians","Which Greek god is associated with the sun, music, prophecy, and archery?",["Apollo","Ares","Hermes","Dionysus"],"Apollo","normal"),
+  makeMC("builtin-greek-ares","Mythology","Greek","Olympians","Which Greek god is associated with violent warfare?",["Ares","Athena","Apollo","Hephaestus"],"Ares","easy"),
+  makeMC("builtin-greek-aphrodite","Mythology","Greek","Olympians","Which goddess is associated with love and beauty?",["Aphrodite","Hera","Artemis","Demeter"],"Aphrodite","easy"),
+  makeMC("builtin-greek-hephaestus","Mythology","Greek","Olympians","Who is the Greek god of smithing and fire?",["Hephaestus","Ares","Apollo","Hermes"],"Hephaestus","normal"),
+  makeMC("builtin-greek-icarus","Mythology","Greek","Heroes & Myths","Who flew too close to the Sun after escaping Crete with wings made by Daedalus?",["Icarus","Perseus","Theseus","Orpheus"],"Icarus","easy"),
+  makeMC("builtin-greek-medusa","Mythology","Greek","Heroes & Myths","What happened to people who looked directly at Medusa?",["They were turned to stone","They fell asleep","They became invisible","They lost their memory"],"They were turned to stone","easy"),
+  makeMC("builtin-greek-perseus","Mythology","Greek","Heroes & Myths","Who killed Medusa in Greek mythology?",["Perseus","Theseus","Heracles","Odysseus"],"Perseus","easy"),
+  makeMC("builtin-greek-minotaur","Mythology","Greek","Heroes & Myths","What creature lived in the Labyrinth of Crete?",["Minotaur","Cyclops","Hydra","Chimera"],"Minotaur","easy"),
+  makeMC("builtin-greek-theseus","Mythology","Greek","Heroes & Myths","Who defeated the Minotaur?",["Theseus","Perseus","Jason","Achilles"],"Theseus","easy"),
+  makeMC("builtin-greek-odyssey","Mythology","Greek","Heroes & Myths","Who is the hero of the Odyssey?",["Odysseus","Achilles","Heracles","Jason"],"Odysseus","easy"),
+  makeMC("builtin-greek-twelve-labors","Mythology","Greek","Heroes & Myths","Who performed the Twelve Labors?",["Heracles","Theseus","Perseus","Orpheus"],"Heracles","easy"),
+  makeMC("builtin-greek-trojan","Mythology","Greek","Heroes & Myths","Which famous object is traditionally said to have helped the Greeks enter Troy?",["The Trojan Horse","The Golden Fleece","Pandora's Box","The Labyrinth"],"The Trojan Horse","easy"),
+
+  // Roman mythology
+  makeMC("builtin-roman-jupiter","Mythology","Roman","Major Gods","Who is the Roman equivalent of Zeus?",["Jupiter","Mars","Neptune","Mercury"],"Jupiter","easy"),
+  makeMC("builtin-roman-juno","Mythology","Roman","Major Gods","Who is the Roman equivalent of Hera?",["Juno","Venus","Diana","Minerva"],"Juno","easy"),
+  makeMC("builtin-roman-neptune","Mythology","Roman","Major Gods","Who is the Roman equivalent of Poseidon?",["Neptune","Pluto","Mercury","Mars"],"Neptune","easy"),
+  makeMC("builtin-roman-mars","Mythology","Roman","Major Gods","Who is the Roman god of war?",["Mars","Jupiter","Janus","Vulcan"],"Mars","easy"),
+  makeMC("builtin-roman-venus","Mythology","Roman","Major Gods","Who is the Roman goddess of love and beauty?",["Venus","Minerva","Juno","Diana"],"Venus","easy"),
+  makeMC("builtin-roman-mercury","Mythology","Roman","Major Gods","Who is the Roman equivalent of Hermes?",["Mercury","Mars","Vulcan","Neptune"],"Mercury","easy"),
+  makeMC("builtin-roman-minerva","Mythology","Roman","Major Gods","Who is the Roman goddess associated with wisdom?",["Minerva","Juno","Venus","Vesta"],"Minerva","easy"),
+  makeMC("builtin-roman-vulcan","Mythology","Roman","Major Gods","Who is the Roman god associated with fire and metalworking?",["Vulcan","Mars","Mercury","Saturn"],"Vulcan","normal"),
+  makeMC("builtin-roman-pluto","Mythology","Roman","Underworld","Who is the Roman god associated with the underworld?",["Pluto","Janus","Neptune","Quirinus"],"Pluto","easy"),
+  makeMC("builtin-roman-janus","Mythology","Roman","Major Gods","Which Roman god is traditionally depicted with two faces?",["Janus","Mars","Saturn","Mercury"],"Janus","easy"),
+  makeMC("builtin-roman-romulus","Mythology","Roman","Founding Myths","Who, according to Roman legend, founded Rome with his brother Remus?",["Romulus","Aeneas","Julius Caesar","Numa Pompilius"],"Romulus","easy"),
+  makeMC("builtin-roman-remus","Mythology","Roman","Founding Myths","Who was Romulus's twin brother?",["Remus","Aeneas","Evander","Turnus"],"Remus","easy"),
+  makeMC("builtin-roman-aeneas","Mythology","Roman","Founding Myths","Which Trojan hero is presented in Roman tradition as an ancestor of the Romans?",["Aeneas","Hector","Paris","Odysseus"],"Aeneas","normal"),
+  makeMC("builtin-roman-saturnalia","Mythology","Roman","Festivals","Which Roman festival honored Saturn?",["Saturnalia","Lupercalia","Floralia","Bacchanalia"],"Saturnalia","easy"),
+  makeMC("builtin-roman-diana","Mythology","Roman","Major Gods","Which Roman goddess is associated with the hunt?",["Diana","Venus","Vesta","Juno"],"Diana","easy"),
+
+  // Astronomy
+  makeMC("builtin-astro-moon-earth","Astronomy","Solar System","Moons","Which is larger by diameter?",["Earth","Moon","They are the same","It depends on phase"],"Earth","easy"),
+  makeMC("builtin-astro-moon-earth-ratio","Astronomy","Solar System","Moon Relative Sizes","About how many Moon diameters fit across Earth's diameter?",["About 4","About 2","About 10","About 20"],"About 4","normal"),
+  makeMC("builtin-astro-jupiter-moon","Astronomy","Solar System","Moon Relative Sizes","Which is larger by diameter?",["Jupiter's moon Ganymede","Mercury","They are the same","The Moon"],"Jupiter's moon Ganymede","normal"),
+  makeMC("builtin-astro-ganymede","Astronomy","Solar System","Moons","What is Ganymede?",["Jupiter's largest moon","Saturn's largest moon","A dwarf planet","An asteroid"],"Jupiter's largest moon","easy"),
+  makeMC("builtin-astro-titan","Astronomy","Solar System","Moons","What is Titan?",["Saturn's largest moon","Jupiter's largest moon","A dwarf planet","A comet"],"Saturn's largest moon","easy"),
+  makeMC("builtin-astro-triton","Astronomy","Solar System","Moons","Which planet has Triton as its largest moon?",["Neptune","Uranus","Saturn","Jupiter"],"Neptune","easy"),
+  makeMC("builtin-astro-europa","Astronomy","Solar System","Moons","Which moon is famous for having a likely subsurface ocean beneath an icy crust?",["Europa","Phobos","Titania","Deimos"],"Europa","easy"),
+  makeMC("builtin-astro-io","Astronomy","Solar System","Moons","Which Galilean moon is the most volcanically active world in the Solar System?",["Io","Europa","Ganymede","Callisto"],"Io","normal"),
+  makeMC("builtin-astro-callisto","Astronomy","Solar System","Moons","Which Galilean moon is heavily cratered and lies farthest from Jupiter of the four Galilean moons?",["Callisto","Io","Europa","Ganymede"],"Callisto","normal"),
+  makeMC("builtin-astro-moon-earths-only","Astronomy","Solar System","Moons","Which planet has exactly one large natural satellite commonly called the Moon?",["Earth","Mars","Venus","Mercury"],"Earth","easy"),
+  makeMC("builtin-astro-mercury","Astronomy","Solar System","Planets","Which planet is closest to the Sun?",["Mercury","Venus","Earth","Mars"],"Mercury","easy"),
+  makeMC("builtin-astro-venus","Astronomy","Solar System","Planets","Which planet has the hottest average surface temperature?",["Venus","Mercury","Earth","Mars"],"Venus","easy"),
+  makeMC("builtin-astro-earth","Astronomy","Solar System","Planets","Which planet is known for having abundant surface liquid water?",["Earth","Mars","Venus","Jupiter"],"Earth","easy"),
+  makeMC("builtin-astro-mars","Astronomy","Solar System","Planets","Which planet is commonly called the Red Planet?",["Mars","Mercury","Jupiter","Neptune"],"Mars","easy"),
+  makeMC("builtin-astro-jupiter","Astronomy","Solar System","Planets","Which is the largest planet in the Solar System?",["Jupiter","Saturn","Neptune","Earth"],"Jupiter","easy"),
+  makeMC("builtin-astro-saturn","Astronomy","Solar System","Planets","Which planet is most famous for its prominent ring system?",["Saturn","Jupiter","Uranus","Neptune"],"Saturn","easy"),
+  makeMC("builtin-astro-uranus","Astronomy","Solar System","Planets","Which planet rotates with an extreme axial tilt, effectively rolling around the Sun?",["Uranus","Neptune","Saturn","Mars"],"Uranus","normal"),
+  makeMC("builtin-astro-neptune","Astronomy","Solar System","Planets","Which planet is farthest from the Sun among the eight planets?",["Neptune","Uranus","Saturn","Jupiter"],"Neptune","easy"),
+  makeMC("builtin-astro-planet-order","Astronomy","Solar System","Planet Order","Which is the correct order from the Sun outward?",["Mercury, Venus, Earth, Mars","Venus, Mercury, Earth, Mars","Mercury, Earth, Venus, Mars","Earth, Venus, Mercury, Mars"],"Mercury, Venus, Earth, Mars","easy"),
+  makeMC("builtin-astro-pluto","Astronomy","Solar System","Dwarf Planets","What is Pluto classified as?",["Dwarf planet","Gas giant","Terrestrial planet","Moon"],"Dwarf planet","easy"),
+  makeMC("builtin-astro-lightyear","Astronomy","Space Basics","Distances","What does a light-year measure?",["Distance","Time","Brightness","Mass"],"Distance","easy"),
+  makeMC("builtin-astro-sun-star","Astronomy","Stars","Basics","What is the Sun?",["A star","A planet","A moon","A galaxy"],"A star","easy"),
+  makeMC("builtin-astro-moon-phases","Astronomy","Earth-Moon","Moon Phases","What causes the Moon's phases as seen from Earth?",["Our changing view of its sunlit half","Earth's shadow every night","The Moon changing shape","Clouds covering the Moon"],"Our changing view of its sunlit half","normal"),
+  makeMC("builtin-astro-eclipse","Astronomy","Earth-Moon","Eclipses","A solar eclipse occurs when which body passes between Earth and the Sun?",["The Moon","Mars","Venus","Jupiter"],"The Moon","easy"),
+
+  // Basic history
+  makeMC("builtin-history-pyramids","History","Ancient World","Egypt","The Great Pyramid of Giza was built in which ancient civilization?",["Ancient Egypt","Ancient Rome","Ancient Greece","Maya civilization"],"Ancient Egypt","easy"),
+  makeMC("builtin-history-rome","History","Ancient World","Rome","Which city was the center of the Roman Empire?",["Rome","Athens","Alexandria","Carthage"],"Rome","easy"),
+  makeMC("builtin-history-writing","History","Ancient World","Early Civilizations","Which ancient civilization is famous for cuneiform writing?",["Sumer","Macedon","Carthage","Sparta"],"Sumer","normal"),
+  makeMC("builtin-history-democracy","History","Ancient World","Greece","Which ancient city-state is especially associated with early democracy?",["Athens","Sparta","Thebes","Corinth"],"Athens","easy"),
+  makeMC("builtin-history-magna-carta","History","Medieval","England","The Magna Carta was first issued in which country?",["England","France","Spain","Italy"],"England","easy"),
+  makeMC("builtin-history-printing","History","Early Modern","Technology","Which invention is strongly associated with Johannes Gutenberg?",["Movable-type printing press","Steam engine","Telephone","Telegraph"],"Movable-type printing press","easy"),
+  makeMC("builtin-history-columbus","History","Early Modern","Exploration","In 1492, Christopher Columbus's famous voyage reached the Americas while seeking a route to what?",["Asia","Australia","Africa","Antarctica"],"Asia","normal"),
+  makeMC("builtin-history-revolution","History","Modern","American Revolution","The American Declaration of Independence was adopted in what year?",["1776","1492","1812","1865"],"1776","easy"),
+  makeMC("builtin-history-civil-war","History","Modern","American Civil War","The American Civil War began in which century?",["19th century","18th century","20th century","17th century"],"19th century","easy"),
+  makeMC("builtin-history-ww1","History","Modern","World Wars","World War I began in which year?",["1914","1918","1939","1905"],"1914","easy"),
+  makeMC("builtin-history-ww2","History","Modern","World Wars","World War II ended in which year?",["1945","1939","1941","1950"],"1945","easy"),
+  makeMC("builtin-history-moonlanding","History","Modern","Space Age","Who was the first person to walk on the Moon?",["Neil Armstrong","Buzz Aldrin","Yuri Gagarin","John Glenn"],"Neil Armstrong","easy"),
+  makeMC("builtin-history-gagarin","History","Modern","Space Age","Who was the first human to orbit Earth?",["Yuri Gagarin","Neil Armstrong","Alan Shepard","John Glenn"],"Yuri Gagarin","normal"),
+  makeMC("builtin-history-renaissance","History","Medieval & Early Modern","Renaissance","The Renaissance began in which broad region?",["Italy","Scandinavia","West Africa","Central Asia"],"Italy","easy"),
+  makeMC("builtin-history-french","History","Modern","France","The French Revolution began in which year?",["1789","1776","1815","1848"],"1789","easy"),
+
+  // Mathematics
+  makeMC("builtin-math-calculus-derivative","Mathematics","Calculus","Derivatives","What is the derivative of x²?",["2x","x","2","x³"],"2x","easy"),
+  makeMC("builtin-math-calculus-linear","Mathematics","Calculus","Derivatives","What is the derivative of 3x + 5?",["3","3x","5","8"],"3","easy"),
+  makeMC("builtin-math-calculus-constant","Mathematics","Calculus","Derivatives","What is the derivative of a constant such as 7?",["0","1","7","x"],"0","easy"),
+  makeMC("builtin-math-calculus-power","Mathematics","Calculus","Derivatives","Using the power rule, what is the derivative of x³?",["3x²","x²","3x","x⁴"],"3x²","easy"),
+  makeMC("builtin-math-calculus-limit","Mathematics","Calculus","Limits","What does a limit describe in basic calculus?",["The value a function approaches","Only the exact value at a point","The largest possible value","The area under every curve"],"The value a function approaches","normal"),
+  makeMC("builtin-math-calculus-integral-area","Mathematics","Calculus","Integrals","What can a definite integral represent geometrically?",["Signed area under a curve","Only the slope","Only the y-intercept","The highest point"],"Signed area under a curve","normal"),
+  makeMC("builtin-math-integral-x","Mathematics","Calculus","Integrals","What is ∫ x dx?",["x²/2 + C","x + C","2x + C","x² + C"],"x²/2 + C","normal"),
+  makeMC("builtin-math-integral-constant","Mathematics","Calculus","Integrals","What is ∫ 5 dx?",["5x + C","5 + C","x/5 + C","25x + C"],"5x + C","easy"),
+  makeMC("builtin-math-integral-power","Mathematics","Calculus","Integrals","What is ∫ x² dx?",["x³/3 + C","2x + C","x²/2 + C","x³ + C"],"x³/3 + C","normal"),
+  makeMC("builtin-math-integral-definite","Mathematics","Calculus","Integrals","If ∫₀² x dx is evaluated exactly, what is the result?",["2","1","4","0"],"2","normal"),
+  makeMC("builtin-math-integral-constant-def","Mathematics","Calculus","Integrals","What is ∫₀³ 2 dx?",["6","2","3","9"],"6","easy"),
+
+  // Alchemy
+  makeMC("builtin-alchemy-philosophers-stone","Alchemy","European Alchemy","Ideas","What legendary substance was said to transform base metals into gold?",["Philosopher's stone","Elixir of life","Quintessence","Azoth"],"Philosopher's stone","easy"),
+  makeMC("builtin-alchemy-elixir","Alchemy","European Alchemy","Ideas","What was the legendary elixir of life supposed to do?",["Grant or prolong life","Turn iron into silver","Summon spirits","Predict eclipses"],"Grant or prolong life","easy"),
+  makeMC("builtin-alchemy-mercury","Alchemy","European Alchemy","Materials","Which metal was especially important in many historical alchemical traditions?",["Mercury","Aluminum","Titanium","Uranium"],"Mercury","normal"),
+  makeMC("builtin-alchemy-sulfur","Alchemy","European Alchemy","Materials","Sulfur was traditionally associated with which color?",["Yellow","Blue","Purple","Black"],"Yellow","easy"),
+  makeMC("builtin-alchemy-transmutation","Alchemy","European Alchemy","Ideas","What does transmutation mean in the context of alchemy?",["Changing one substance or metal into another","Predicting weather","Measuring time","Making glass only"],"Changing one substance or metal into another","easy"),
+  makeMC("builtin-alchemy-hermetic","Alchemy","European Alchemy","History","Alchemy in Europe was strongly connected with which broader intellectual tradition?",["Hermeticism","Confucianism","Stoicism only","Existentialism"],"Hermeticism","normal"),
+  makeMC("builtin-alchemy-geber","Alchemy","Islamic Golden Age","History","Which name is traditionally associated with the prolific Arabic alchemical writer often Latinized as Geber?",["Jabir ibn Hayyan","Ibn Sina","Al-Khwarizmi","Al-Biruni"],"Jabir ibn Hayyan","hard"),
+  makeMC("builtin-alchemy-arabic","Alchemy","Islamic Golden Age","History","Why was the medieval Islamic world important to the history of alchemy?",["Scholars preserved, translated, and expanded earlier works","Alchemy was invented there from nothing","Alchemy was banned everywhere else","It had no connection to laboratory practice"],"Scholars preserved, translated, and expanded earlier works","normal"),
+  makeMC("builtin-alchemy-distillation","Alchemy","Laboratory Practices","Techniques","Which laboratory technique involves boiling a liquid and then condensing its vapor?",["Distillation","Filtration","Decantation","Crystallization"],"Distillation","easy"),
+  makeMC("builtin-alchemy-crucible","Alchemy","Laboratory Practices","Equipment","What is a crucible primarily used for?",["Heating substances to high temperatures","Measuring distance","Filtering water","Growing plants"],"Heating substances to high temperatures","easy"),
+  makeMC("builtin-alchemy-red-king","Alchemy","European Alchemy","Symbolism","In some alchemical traditions, the Red King is associated with what broad symbolic idea?",["Sulfur and the active/red principle","Water only","Ironworking only","The planet Neptune"],"Sulfur and the active/red principle","hard"),
+  makeMC("builtin-alchemy-white-queen","Alchemy","European Alchemy","Symbolism","In some alchemical symbolism, the White Queen is associated with what broad principle?",["The lunar/silver principle","The solar/gold principle","Fire only","Copper only"],"The lunar/silver principle","hard"),
+
+  // Story Math
+  makeTyped("builtin-story-1","Story Math","Story Problems","Addition & Subtraction","Mia has 7 apples and buys 5 more. How many apples does she have?",["12"],"super easy"),
+  makeTyped("builtin-story-2","Story Math","Story Problems","Addition & Subtraction","A shelf holds 18 books. You remove 6. How many books remain?",["12"],"super easy"),
+  makeTyped("builtin-story-3","Story Math","Story Problems","Addition & Subtraction","A bus has 23 passengers. 8 get off. How many passengers remain?",["15"],"easy"),
+  makeTyped("builtin-story-4","Story Math","Story Problems","Addition & Subtraction","Sam saves $15, then saves another $12. How much has Sam saved?",["27","$27"],"easy"),
+  makeTyped("builtin-story-5","Story Math","Story Problems","Multiplication & Division","There are 6 boxes with 4 pencils in each box. How many pencils are there?",["24"],"easy"),
+  makeTyped("builtin-story-6","Story Math","Story Problems","Multiplication & Division","A teacher has 36 stickers and gives 6 students the same number. How many stickers does each student get?",["6"],"easy"),
+  makeTyped("builtin-story-7","Story Math","Story Problems","Multiplication & Division","A theater has 8 rows with 7 seats in each row. How many seats are there?",["56"],"easy"),
+  makeTyped("builtin-story-8","Story Math","Story Problems","Multiplication & Division","Four friends split 28 cookies equally. How many cookies does each friend get?",["7"],"easy"),
+  makeTyped("builtin-story-9","Story Math","Story Problems","Fractions & Percentages","A pizza has 8 equal slices. You eat 3. What fraction of the pizza did you eat?",["3/8"],"normal"),
+  makeTyped("builtin-story-10","Story Math","Story Problems","Fractions & Percentages","A $20 item is discounted by 25%. How many dollars is the discount?",["5","$5"],"normal"),
+  makeTyped("builtin-story-11","Story Math","Story Problems","Fractions & Percentages","A class has 20 students and 5 are absent. What fraction of the class is absent?",["1/4","5/20"],"normal"),
+  makeTyped("builtin-story-12","Story Math","Story Problems","Rates & Time","A car travels 60 miles in 2 hours at a constant rate. What is its average speed?",["30 mph","30"],"normal"),
+  makeTyped("builtin-story-13","Story Math","Story Problems","Rates & Time","A faucet fills 12 liters in 3 minutes at a constant rate. How many liters per minute?",["4","4 liters per minute"],"easy"),
+  makeTyped("builtin-story-14","Story Math","Story Problems","Rates & Time","A movie starts at 7:30 PM and lasts 2 hours. What time does it end?",["9:30 PM","21:30"],"easy"),
+  makeTyped("builtin-story-15","Story Math","Story Problems","Mixed","You have $50 and spend $18 on a book and $12 on a game. How much money remains?",["20","$20"],"easy"),
+  makeTyped("builtin-story-16","Story Math","Story Problems","Mixed","A farmer has 5 rows of plants with 9 plants in each row, then adds 4 more plants. How many plants are there?",["49"],"normal"),
+  makeTyped("builtin-story-17","Story Math","Story Problems","Mixed","A recipe serves 4 people and uses 2 cups of flour. How many cups are needed to serve 8 people at the same rate?",["4"],"easy"),
+  makeTyped("builtin-story-18","Story Math","Story Problems","Mixed","A runner completes 3 laps of a 400-meter track. How far does the runner travel?",["1200 meters","1200"],"easy"),
+];
+
+// Add all 144 multiplication questions to the new topic if they already exist.
+bank=bank.map(q=>String(q.id||"").startsWith("demo-math-multiplication-")?{...q,topic:q.topic||"1–12 Multiplication",source:q.source||"builtin"}:q);
+
+if(!localStorage.getItem(BUILTIN_DATA_SEED_KEY)){
+  const ids=new Set(bank.map(q=>q.id));
+  const additions=BUILTIN_QUESTIONS.filter(q=>!ids.has(q.id));
+  bank.push(...additions);
+  customCategories=[...new Set([...customCategories,...bank.map(q=>q.category).filter(Boolean)])].sort((a,b)=>a.localeCompare(b));
+  localStorage.setItem(KEY,JSON.stringify(bank));
+  localStorage.setItem(CATEGORY_KEY,JSON.stringify(customCategories));
+  localStorage.setItem(BUILTIN_DATA_SEED_KEY,"1");
+}else{
+  // Repair/update metadata for starter questions without overwriting user data.
+  let changed=false;
+  const ids=new Set(bank.map(q=>q.id));
+  for(const q of BUILTIN_QUESTIONS){
+    if(!ids.has(q.id)){bank.push(q);changed=true;}
+  }
+  if(changed)localStorage.setItem(KEY,JSON.stringify(bank));
+}
+
+// Built-in tests are definitions, not question lists. They dynamically query
+// the current bank so user-added questions automatically participate.
+const BUILTIN_TESTS=[
+  {id:"builtin-test-greek",name:"Greek Mythology",description:"Olympians, heroes, and famous Greek myths.",categories:["Mythology"],subcategories:["Greek"]},
+  {id:"builtin-test-roman",name:"Roman Mythology",description:"Major Roman gods, founding stories, and festivals.",categories:["Mythology"],subcategories:["Roman"]},
+  {id:"builtin-test-moons",name:"Astronomy — Moons",description:"Moon identities, relative sizes, and interesting Solar System satellites.",categories:["Astronomy"],subcategories:["Solar System"],topics:["Moons","Moon Relative Sizes"]},
+  {id:"builtin-test-planets",name:"Astronomy — Planets",description:"Planet names, order, classifications, and basic descriptions.",categories:["Astronomy"],subcategories:["Solar System"],topics:["Planets","Planet Order","Dwarf Planets"]},
+  {id:"builtin-test-history",name:"Basic History",description:"A gentle introduction to major events, people, and civilizations.",categories:["History"]},
+  {id:"builtin-test-multiplication",name:"1–12 Multiplication",description:"The complete 1–12 multiplication starter set.",categories:["Mathematics"],subcategories:["Multiplication"],topics:["1–12 Multiplication"]},
+  {id:"builtin-test-calculus",name:"Basic Calculus",description:"Very introductory derivatives, limits, and integrals.",categories:["Mathematics"],subcategories:["Calculus"]},
+  {id:"builtin-test-alchemy",name:"Basic Alchemy",description:"Introductory ideas, symbolism, history, and laboratory practices.",categories:["Alchemy"]},
+  {id:"builtin-test-story-math",name:"Story Math",description:"Basic word problems that require choosing the arithmetic operation yourself.",categories:["Story Math"],subcategories:["Story Problems"]}
+];
+
 function saveCategories(){
   customCategories=[...new Set(customCategories.map(x=>x.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   localStorage.setItem(CATEGORY_KEY,JSON.stringify(customCategories));
@@ -1168,100 +1383,88 @@ function getSelectedTestSubcategories(){
   if(!select)return [];
   return [...select.selectedOptions].map(o=>o.value).filter(Boolean);
 }
-let testSelectionInitialized=false;
-
-function updateTestSelectionStatus(){
-  const cats=getSelectedTestCategories();
-  const subs=getSelectedTestSubcategories();
-  const catEl=$("testCategorySelection");
-  const subEl=$("testSubcategorySelection");
-  if(catEl){
-    catEl.innerHTML=cats.length
-      ? `Selected: <strong>${esc(cats.join(", "))}</strong>`
-      : `Selected: <strong>All categories</strong>`;
-  }
-  if(subEl){
-    subEl.innerHTML=subs.length
-      ? `Selected: <strong>${esc(subs.join(", "))}</strong>`
-      : `Selected: <strong>All subcategories</strong>`;
-  }
+function getSelectedTestTopics(){
+  const select=$("testTopic");
+  if(!select)return [];
+  return [...select.selectedOptions].map(o=>o.value).filter(Boolean);
 }
-
+let testSelectionInitialized=false;
+function updateTestSelectionStatus(){
+  const cats=getSelectedTestCategories(), subs=getSelectedTestSubcategories(), topics=getSelectedTestTopics();
+  if($("testCategorySelection"))$("testCategorySelection").innerHTML=cats.length?`Selected: <strong>${esc(cats.join(", "))}</strong>`:`Selected: <strong>All categories</strong>`;
+  if($("testSubcategorySelection"))$("testSubcategorySelection").innerHTML=subs.length?`Selected: <strong>${esc(subs.join(", "))}</strong>`:`Selected: <strong>All subcategories</strong>`;
+  if($("testTopicSelection"))$("testTopicSelection").innerHTML=topics.length?`Selected: <strong>${esc(topics.join(", "))}</strong>`:`Selected: <strong>All topics</strong>`;
+}
 function setSelectedTestSubcategories(values){
   const wanted=new Set(Array.isArray(values)?values:(values?[values]:[]));
   [...$("testSubcategory").options].forEach(o=>o.selected=wanted.has(o.value));
   updateTestSelectionStatus();
 }
+function setSelectedTestTopics(values){
+  const wanted=new Set(Array.isArray(values)?values:(values?[values]:[]));
+  [...$("testTopic").options].forEach(o=>o.selected=wanted.has(o.value));
+  updateTestSelectionStatus();
+}
+function refreshTopicControls(preserve=true){
+  const select=$("testTopic"); if(!select)return;
+  const old=preserve?getSelectedTestTopics():[];
+  const cats=getSelectedTestCategories(), subs=getSelectedTestSubcategories();
+  const topics=[...new Set(bank.filter(q=>(!cats.length||cats.includes(q.category))&&(!subs.length||subs.includes(q.subcategory||"") )).map(q=>q.topic||"").filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  select.innerHTML=topics.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  setSelectedTestTopics(old.filter(t=>topics.includes(t)));
+}
 function refreshSubcategoryControls(preserve=true){
-  const select=$("testSubcategory");
-  if(!select)return;
+  const select=$("testSubcategory"); if(!select)return;
   const old=preserve?getSelectedTestSubcategories():[];
   const cats=getSelectedTestCategories();
   const subs=[...new Set(bank.filter(q=>!cats.length||cats.includes(q.category)).map(q=>q.subcategory||"").filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   select.innerHTML=subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
   setSelectedTestSubcategories(old.filter(s=>subs.includes(s)));
+  refreshTopicControls(true);
 }
 function refreshSubcategorySuggestions(){
-  const list=$("subcategoryOptions");
-  if(!list)return;
-  const currentCat=$("cat")?.value||"";
+  const list=$("subcategoryOptions"), topicList=$("topicOptions"); if(!list)return;
+  const currentCat=$("cat")?.value||"", currentSub=$("subcat")?.value||"";
   const subs=[...new Set(bank.filter(q=>(!currentCat||q.category===currentCat)&&q.subcategory).map(q=>q.subcategory))].sort((a,b)=>a.localeCompare(b));
   list.innerHTML=subs.map(s=>`<option value="${esc(s)}"></option>`).join("");
+  if(topicList){
+    const topics=[...new Set(bank.filter(q=>(!currentCat||q.category===currentCat)&&(!currentSub||q.subcategory===currentSub)&&q.topic).map(q=>q.topic))].sort((a,b)=>a.localeCompare(b));
+    topicList.innerHTML=topics.map(t=>`<option value="${esc(t)}"></option>`).join("");
+  }
 }
-
 function setSelectedTestCategories(values){
   const wanted=Array.isArray(values)?values:(values?[values]:[]);
   [...$("testCategory").options].forEach(o=>o.selected=wanted.includes(o.value));
 }
-
 function renderCategoryControls(){
   const select=$("cat");
-  if(select){
-    const current=select.value;
-    select.innerHTML='<option value="">Select a category...</option>'+
-      customCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-    if(customCategories.includes(current)) select.value=current;
-  }
-
+  if(select){const current=select.value;select.innerHTML='<option value="">Select a category...</option>'+customCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");if(customCategories.includes(current))select.value=current;}
   const testSelect=$("testCategory");
   if(testSelect){
     let current=getSelectedTestCategories();
     testSelect.innerHTML=customCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-
-    if(!testSelectionInitialized && !current.length && customCategories.length){
-      current=[customCategories[0]];
-    }
-
-    setSelectedTestCategories(current);
-    refreshSubcategoryControls(true);
-
+    if(!testSelectionInitialized&&!current.length&&customCategories.length)current=[customCategories[0]];
+    setSelectedTestCategories(current);refreshSubcategoryControls(true);
     if(!testSelectionInitialized){
-      const subSelect=$("testSubcategory");
-      if(subSelect && subSelect.options.length && !getSelectedTestSubcategories().length){
-        subSelect.options[0].selected=true;
-      }
+      if($("testSubcategory")?.options.length&&!getSelectedTestSubcategories().length)$("testSubcategory").options[0].selected=true;
+      refreshTopicControls(false);
+      if($("testTopic")?.options.length&&!getSelectedTestTopics().length)$("testTopic").options[0].selected=true;
       testSelectionInitialized=true;
     }
-
     updateTestSelectionStatus();
   }
-
   refreshSubcategorySuggestions();
-
   const list=$("categoryList");
-  if(list){
-    list.innerHTML=customCategories.length
-      ? customCategories.map(c=>{
-          const count=bank.filter(x=>(x.category||"")===c).length;
-          const disabled=count>0?"disabled":"";
-          return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #333;">
-            <span style="flex:1;">${esc(c)} <span class="muted small">(${count} question${count===1?"":"s"})</span></span>
-            <button ${disabled} onclick="deleteCategory('${encodeURIComponent(c)}')">Delete</button>
-          </div>`;
-        }).join("")
-      : "<p class='muted'>No custom categories yet.</p>";
-  }
+  if(list){list.innerHTML=customCategories.length?customCategories.map(c=>{const count=bank.filter(x=>(x.category||"")===c).length;const disabled=count>0?"disabled":"";return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #333;"><span style="flex:1;">${esc(c)} <span class="muted small">(${count} question${count===1?"":"s"})</span></span><button ${disabled} onclick="deleteCategory('${encodeURIComponent(c)}')">Delete</button></div>`;}).join(""):"<p class='muted'>No custom categories yet.</p>";}
 }
+
+function poolForCategoriesAndSubcategories(categories,subcategories,topics){
+  let pool=poolForCategories(categories);
+  if(Array.isArray(subcategories)&&subcategories.length)pool=pool.filter(q=>subcategories.includes(q.subcategory||""));
+  if(Array.isArray(topics)&&topics.length)pool=pool.filter(q=>topics.includes(q.topic||""));
+  return pool;
+}
+function availableCustomQuestions(){return poolForCategoriesAndSubcategories(getSelectedTestCategories(),getSelectedTestSubcategories(),getSelectedTestTopics());}
 
 function deleteCategory(encoded){
   const name=decodeURIComponent(encoded);
@@ -1277,11 +1480,6 @@ function deleteCategory(encoded){
 }
 window.deleteCategory=deleteCategory;
 
-function poolForCategoriesAndSubcategories(categories,subcategories){
-  let pool=poolForCategories(categories);
-  if(Array.isArray(subcategories)&&subcategories.length) pool=pool.filter(q=>subcategories.includes(q.subcategory||""));
-  return pool;
-}
 function availableCustomQuestions(){
   return poolForCategoriesAndSubcategories(getSelectedTestCategories(),getSelectedTestSubcategories());
 }
@@ -1304,6 +1502,8 @@ function renderCustomQuestionPicker(){
     !term ||
     q.question.toLowerCase().includes(term) ||
     (q.category||"").toLowerCase().includes(term) ||
+    (q.subcategory||"").toLowerCase().includes(term) ||
+    (q.topic||"").toLowerCase().includes(term) ||
     (q.difficulty||"").toLowerCase().includes(term)
   );
 
@@ -1324,7 +1524,7 @@ function renderCustomQuestionPicker(){
     return `<label class="custom-question-row">
       <input type="checkbox" data-custom-question-id="${q.id}" ${checked?"checked":""}>
       <span class="custom-question-text">${esc(q.question)}</span>
-      <span class="muted small">${esc(q.category||"")} · ${esc(q.difficulty||"normal")}</span>
+      <span class="muted small">${esc(q.category||"")} · ${esc(q.subcategory||"")} · ${esc(q.topic||"")} · ${esc(q.difficulty||"normal")}</span>
     </label>`;
   }).join("");
 
@@ -1361,6 +1561,7 @@ function getCurrentTestSettings(){
     limit:Math.max(0,+$("limit").value||0),
     categories:getSelectedTestCategories(),
     subcategories:getSelectedTestSubcategories(),
+    topics:getSelectedTestTopics(),
     difficulty:$("testDifficulty").value||"easy",
     customQuestionMode:customQuestionMode,
     selectedQuestionIds:customQuestionMode?[...selectedCustomQuestionIds]:[],
@@ -1375,6 +1576,12 @@ function getTestCategories(settings){
   if(Array.isArray(settings.categories)) return settings.categories;
   if(settings.category) return [settings.category];
   return [];
+}
+function getTestSubcategories(settings){
+  return Array.isArray(settings?.subcategories)?settings.subcategories:[];
+}
+function getTestTopics(settings){
+  return Array.isArray(settings?.topics)?settings.topics:[];
 }
 function categorySummary(categories){
   const cats=[...new Set(categories||[])];
@@ -1401,6 +1608,35 @@ function saveCustomTests(){
   localStorage.setItem(CUSTOM_TEST_KEY,JSON.stringify(customTests));
   renderCustomTests();
 }
+
+
+function builtinTestPool(t){
+  return poolForCategoriesAndSubcategories(t.categories||[],t.subcategories||[],t.topics||[]);
+}
+function renderBuiltinTests(){
+  const box=$("builtinTestList"); if(!box)return;
+  box.innerHTML=BUILTIN_TESTS.map(t=>{
+    const n=builtinTestPool(t).length;
+    const tags=[...(t.categories||[]),...(t.subcategories||[]),...(t.topics||[])].map(x=>`<span class="builtin-test-tag">${esc(x)}</span>`).join("");
+    return `<div class="builtin-test-card">
+      <div class="builtin-test-head"><span class="name">${esc(t.name)}</span><span class="built-in-tag">BUILT-IN</span><span class="muted small">${n} question${n===1?"":"s"}</span></div>
+      <p class="muted small">${esc(t.description||"")}</p>
+      <div class="builtin-test-tags">${tags}</div>
+      <div class="actions"><label class="run-count-label">Questions this run <input id="builtinRun-${esc(t.id)}" class="run-count" type="number" min="1" max="${Math.max(1,n)}" value="${Math.min(20,Math.max(1,n))}"></label><button type="button" onclick="runBuiltinTestById('${t.id}')">Run</button></div>
+    </div>`;
+  }).join("");
+}
+function runBuiltinTestById(id){
+  const t=BUILTIN_TESTS.find(x=>x.id===id); if(!t)return;
+  const pool=builtinTestPool(t);
+  if(!pool.length){alert(`There are no questions available for "${t.name}" yet.`);return;}
+  const input=$(`builtinRun-${id}`);
+  const count=Math.max(1,Math.min(pool.length,Number(input?.value)||Math.min(20,pool.length)));
+  const settings={count,limit:0,categories:t.categories||[],subcategories:t.subcategories||[],topics:t.topics||[],difficulty:"easy",customQuestionMode:false,selectedQuestionIds:[],showCorrectOnWrong:false,transitionTime:0.5,questionTimeout:2,manualNext:false};
+  const questions=chooseWeightedQuestions(pool,count,settings.difficulty);
+  runTestDefinition(questions,settings,{testName:t.name,categories:t.categories||[],subcategories:t.subcategories||[],topics:t.topics||[],category:categorySummary(t.categories||[]),categorySummary:categorySummary(t.categories||[]),noSave:false,builtinTestId:t.id});
+}
+window.runBuiltinTestById=runBuiltinTestById;
 
 function renderCustomTests(){
   const list=$("existingTestList");
@@ -1495,6 +1731,7 @@ function rerunHistoryById(id){
     limit:0,
     categories:historyCategories(r),
     subcategories:r.settings?.subcategories||[],
+    topics:r.settings?.topics||[],
     difficulty:r.settings?.difficulty||"easy",
     customQuestionMode:false,
     selectedQuestionIds:questions.map(q=>q.id),
@@ -1562,6 +1799,7 @@ function recordCompletedTest(){
       limit:currentTestMeta.limit ?? 0,
       categories:currentTestMeta.categories||[],
       subcategories:currentTestMeta.subcategories||[],
+      topics:currentTestMeta.topics||[],
       difficulty:currentTestMeta.difficulty||"easy",
       customQuestionMode:!!currentTestMeta.customQuestionMode,
       selectedQuestionIds:test.map(x=>x.id),
@@ -1615,6 +1853,7 @@ function historySettingTags(r){
   tags.push(limit>0?`Timed: ${limit} min`:"Untimed");
 
   if(Array.isArray(s.subcategories)&&s.subcategories.length) tags.push(`Subject: ${s.subcategories.slice(0,2).join(", ")}${s.subcategories.length>2?" +"+(s.subcategories.length-2):""}`);
+  if(Array.isArray(s.topics)&&s.topics.length) tags.push(`Topic: ${s.topics.slice(0,2).join(", ")}${s.topics.length>2?" +"+(s.topics.length-2):""}`);
   tags.push(`Difficulty: ${s.difficulty||"easy"}`);
   tags.push(s.showCorrectOnWrong?"Correct answer shown":"Correct answer hidden");
   tags.push(s.manualNext?"Manual advance":"Auto advance");
@@ -1639,6 +1878,7 @@ function historySettingKey(r){
     count:Number(r.totalQuestions)||Number(s.count)||0,
     limit:Number(s.limit)||0,
     subcategories:Array.isArray(s.subcategories)?[...s.subcategories].sort():[],
+    topics:Array.isArray(s.topics)?[...s.topics].sort():[],
     difficulty:s.difficulty||"easy",
     showCorrectOnWrong:!!s.showCorrectOnWrong,
     manualNext:!!s.manualNext,
@@ -1835,6 +2075,7 @@ function runTestDefinition(questionList,settings,meta={}){
     testName:meta.testName||"Random Test",
     categories:meta.categories||getTestCategories(settings),
     subcategories:meta.subcategories||settings.subcategories||[],
+    topics:meta.topics||settings.topics||[],
     difficulty:meta.difficulty||settings.difficulty||"easy",
     category:meta.category||categorySummary(meta.categories||getTestCategories(settings)),
     categorySummary:meta.categorySummary||categorySummary(meta.categories||getTestCategories(settings)),
@@ -1888,7 +2129,7 @@ function runExistingTestById(id){
   }
   if(requested<t.questionIds.length) questions=shuffle(questions).slice(0,requested);
   runTestDefinition(questions,t.settings,{
-    testId:t.id,testName:t.name,categories:getTestCategories(t.settings),
+    testId:t.id,testName:t.name,categories:getTestCategories(t.settings),subcategories:t.settings.subcategories||[],topics:t.settings.topics||[],
     category:categorySummary(getTestCategories(t.settings)),
     categorySummary:categorySummary(getTestCategories(t.settings)),
     noSave:requested<t.questionIds.length
@@ -1909,6 +2150,8 @@ function editCustomTestById(id){
   setSelectedTestCategories(getTestCategories(t.settings));
   refreshSubcategoryControls(false);
   setSelectedTestSubcategories(t.settings.subcategories||[]);
+  refreshTopicControls(false);
+  setSelectedTestTopics(t.settings.topics||[]);
   $("testDifficulty").value=t.settings.difficulty||"easy";
   setCustomQuestionMode(!!t.settings.customQuestionMode, t.settings.selectedQuestionIds||t.questionIds||[]);
   $("showCorrectOnWrong").checked=!!t.settings.showCorrectOnWrong;
@@ -1982,6 +2225,7 @@ function updateUI(){
   const cats=categories();
   renderCategoryControls();
   renderCustomTests();
+  renderBuiltinTests();
   renderRandomTestHistory();
   renderSavedTestHistory();
   if($("maxRandomHistory")) $("maxRandomHistory").value=testSettings.maxRandomHistory;
@@ -1995,50 +2239,35 @@ function updateUI(){
 
   const groups={};
   bank.forEach((x,i)=>{
-    const cat=x.category||"Uncategorized";
-    const sub=x.subcategory||"General";
-    if(!groups[cat]) groups[cat]={};
-    if(!groups[cat][sub]) groups[cat][sub]=[];
-    groups[cat][sub].push({x,i});
+    const cat=x.category||"Uncategorized", sub=x.subcategory||"General", topic=x.topic||"General";
+    if(!groups[cat])groups[cat]={};
+    if(!groups[cat][sub])groups[cat][sub]={};
+    if(!groups[cat][sub][topic])groups[cat][sub][topic]=[];
+    groups[cat][sub][topic].push({x,i});
   });
-
-  // Preserve expanded category/subcategory groups across edits/deletes.
-  const openCategories=new Set(
-    [...$("bankTable").querySelectorAll("details.category-group[open][data-group-key]")]
-      .map(d=>d.dataset.groupKey)
-  );
-  const openSubcategories=new Set(
-    [...$("bankTable").querySelectorAll("details.subcategory-group[open][data-group-key]")]
-      .map(d=>d.dataset.groupKey)
-  );
-
+  const openCategories=new Set([...$("bankTable").querySelectorAll("details.category-group[open][data-group-key]")].map(d=>d.dataset.groupKey));
+  const openSubcategories=new Set([...$("bankTable").querySelectorAll("details.subcategory-group[open][data-group-key]")].map(d=>d.dataset.groupKey));
+  const openTopics=new Set([...$("bankTable").querySelectorAll("details.topic-group[open][data-group-key]")].map(d=>d.dataset.groupKey));
   $("bankTable").innerHTML=Object.keys(groups).sort((a,b)=>a.localeCompare(b)).map(cat=>{
     const subgroups=groups[cat];
     const subHtml=Object.keys(subgroups).sort((a,b)=>a.localeCompare(b)).map(sub=>{
-      const rows=subgroups[sub].map(({x,i})=>{
-        const difficulty=x.difficulty||"normal";
-        const typeText=x.type==="mc"
-          ? ("MC ("+(x.displayCount||4)+" shown / "+(x.poolCount||x.choices.length)+" pool): "+x.choices.join(" / ")+(x.allAbove?" / All of the above":"")+(x.noneAbove?" / None of the above":""))
-          : (x.answers||[]).join(" / ");
-        return `<tr>
-          <td>${esc(x.question)}</td>
-          <td><span class="difficulty ${esc(difficulty.replace(/\s+/g,"-"))}">${esc(difficulty)}</span></td>
-          <td>${esc(typeText)}</td>
-          <td><button onclick="editQuestionById('${x.id}')">Edit</button> <button onclick="deleteQuestionById('${x.id}')">Delete</button></td>
-        </tr>`;
+      const topicHtml=Object.keys(subgroups[sub]).sort((a,b)=>a.localeCompare(b)).map(topic=>{
+        const rows=subgroups[sub][topic].map(({x})=>{
+          const difficulty=x.difficulty||"normal";
+          const source=x.source==="builtin"?` <span class="built-in-tag">BUILT-IN</span>`:"";
+          const typeText=x.type==="mc"?("MC ("+(x.displayCount||4)+" shown / "+(x.poolCount||x.choices.length)+" pool): "+x.choices.join(" / ")+(x.allAbove?" / All of the above":"")+(x.noneAbove?" / None of the above":"")):(x.answers||[]).join(" / ");
+          return `<tr><td>${esc(x.question)}${source}</td><td><span class="difficulty ${esc(difficulty.replace(/\s+/g,"-"))}">${esc(difficulty)}</span></td><td>${esc(typeText)}</td><td><button onclick="editQuestionById('${x.id}')">Edit</button> <button onclick="deleteQuestionById('${x.id}')">Delete</button></td></tr>`;
+        }).join("");
+        const topicKey=encodeURIComponent(cat)+"::"+encodeURIComponent(sub)+"::"+encodeURIComponent(topic);
+        return `<details class="topic-group" data-group-key="${topicKey}"${openTopics.has(topicKey)?" open":""}><summary><strong>${esc(topic)}</strong> <span class="muted small">(${subgroups[sub][topic].length})</span></summary><table><thead><tr><th>Question</th><th>Difficulty</th><th>Answer / Choices</th><th></th></tr></thead><tbody>${rows}</tbody></table></details>`;
       }).join("");
       const subKey=encodeURIComponent(cat)+"::"+encodeURIComponent(sub);
-      return `<details class="subcategory-group" data-group-key="${subKey}"${openSubcategories.has(subKey)?" open":""}>
-        <summary><strong>${esc(sub)}</strong> <span class="muted small">(${subgroups[sub].length})</span></summary>
-        <table><thead><tr><th>Question</th><th>Difficulty</th><th>Answer / Choices</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-      </details>`;
+      const total=Object.values(subgroups[sub]).reduce((n,a)=>n+a.length,0);
+      return `<details class="subcategory-group" data-group-key="${subKey}"${openSubcategories.has(subKey)?" open":""}><summary><strong>${esc(sub)}</strong> <span class="muted small">(${total})</span></summary><div class="category-group-body">${topicHtml}</div></details>`;
     }).join("");
-    const total=Object.values(subgroups).reduce((n,a)=>n+a.length,0);
+    const total=Object.values(subgroups).flatMap(x=>Object.values(x)).reduce((n,a)=>n+a.length,0);
     const catKey=encodeURIComponent(cat);
-    return `<details class="category-group" data-group-key="${catKey}"${openCategories.has(catKey)?" open":""}>
-      <summary><strong>${esc(cat)}</strong> <span class="muted small">(${total})</span></summary>
-      <div class="category-group-body">${subHtml}</div>
-    </details>`;
+    return `<details class="category-group" data-group-key="${catKey}"${openCategories.has(catKey)?" open":""}><summary><strong>${esc(cat)}</strong> <span class="muted small">(${total})</span></summary><div class="category-group-body">${subHtml}</div></details>`;
   }).join("");
 }
 let editingQuestionId = null;
@@ -2185,6 +2414,7 @@ function editQuestion(i){
 
   $("cat").value=x.category||"";
   $("subcat").value=x.subcategory||"";
+  $("topic").value=x.topic||"";
   refreshSubcategorySuggestions();
   $("difficulty").value=x.difficulty||"normal";
   $("q").value=x.question||"";
@@ -2640,12 +2870,13 @@ $("save").onclick=()=>{
   const category=$("cat").value;
   if(!category){$("saveMsg").textContent="Select a category.";return;}
   const subcategory=$("subcat").value.trim();
+  const topic=$("topic").value.trim();
   const question=$("q").value.trim();
   const type=$("qtype").value;
   const difficulty=$("difficulty").value||"normal";
   if(!question){$("saveMsg").textContent="Need a question.";return;}
 
-  let item={id:editingQuestionId||crypto.randomUUID(),category,subcategory,question,type,difficulty,image:"",updatedAt:Date.now()};
+  let item={id:editingQuestionId||crypto.randomUUID(),category,subcategory,topic,question,type,difficulty,image:"",source:(editingQuestionId?((bank.find(q=>q.id===editingQuestionId)?.source)||"custom"):"custom"),updatedAt:Date.now()};
 
   if(type==="typed"){
     const answers=$("a").value.split("\\n").map(x=>x.trim()).filter(Boolean);
@@ -2736,7 +2967,7 @@ function clearForm(){
   editingQuestionId=null;
   editingImageDraft=[];
   renderQuestionImagePreview("");
-  $("cat").value="";$("subcat").value="";$("difficulty").value="normal";$("q").value="";$("a").value="";$("img").value="";
+  $("cat").value="";$("subcat").value="";$("topic").value="";$("difficulty").value="normal";$("q").value="";$("a").value="";$("img").value="";
   $("qtype").value="typed";$("typedEditor").classList.remove("hidden");$("mcEditor").classList.add("hidden");
   $("mcPoolCount").value=4;$("mcDisplayCount").value=4;$("allAbove").checked=false;$("noneAbove").checked=false;
   $("answerPoolSelect").value="";$("editSelectedAnswerPool").classList.add("hidden");
@@ -2781,7 +3012,8 @@ $("saveCustomTest").onclick=()=>{
 
   const selectedCategories=getSelectedTestCategories();
   const selectedSubcategories=getSelectedTestSubcategories();
-  const pool=poolForCategoriesAndSubcategories(selectedCategories,selectedSubcategories);
+  const selectedTopics=getSelectedTestTopics();
+  const pool=poolForCategoriesAndSubcategories(selectedCategories,selectedSubcategories,selectedTopics);
   const n=Math.min(Math.max(1,+$("count").value||20),pool.length);
   if(!pool.length){alert("There are no questions available for this setup.");return;}
 
@@ -2825,6 +3057,20 @@ function equivalent(user, accepted){
 }
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
+$("testCategory").onchange=()=>{ refreshSubcategoryControls(true); updateTestSelectionStatus(); if(customQuestionMode)renderCustomQuestionPicker(); };
+$("testSubcategory").onchange=()=>{ refreshTopicControls(true); updateTestSelectionStatus(); if(customQuestionMode)renderCustomQuestionPicker(); };
+$("testTopic").onchange=()=>{ updateTestSelectionStatus(); if(customQuestionMode)renderCustomQuestionPicker(); };
+$("selectAllCategories").onclick=()=>{ [...$("testCategory").options].forEach(o=>o.selected=true); refreshSubcategoryControls(false); updateTestSelectionStatus(); };
+$("clearCategories").onclick=()=>{ [...$("testCategory").options].forEach(o=>o.selected=false); refreshSubcategoryControls(false); updateTestSelectionStatus(); };
+$("selectAllSubcategories").onclick=()=>{ [...$("testSubcategory").options].forEach(o=>o.selected=true); refreshTopicControls(false); updateTestSelectionStatus(); };
+$("clearSubcategories").onclick=()=>{ [...$("testSubcategory").options].forEach(o=>o.selected=false); refreshTopicControls(false); updateTestSelectionStatus(); };
+$("selectAllTopics").onclick=()=>{ [...$("testTopic").options].forEach(o=>o.selected=true); updateTestSelectionStatus(); };
+$("clearTopics").onclick=()=>{ [...$("testTopic").options].forEach(o=>o.selected=false); updateTestSelectionStatus(); };
+
+$("cat").onchange=()=>{ refreshSubcategorySuggestions(); };
+$("subcat").oninput=()=>{ refreshSubcategorySuggestions(); };
+$("subcat").onchange=()=>{ refreshSubcategorySuggestions(); };
+
 $("start").onclick=()=>{
   if(editingCustomTestId){
     const t=customTests.find(x=>x.id===editingCustomTestId);
@@ -2864,7 +3110,8 @@ $("start").onclick=()=>{
   if(!bank.length)return;
   const selectedCategories=getSelectedTestCategories();
   const selectedSubcategories=getSelectedTestSubcategories();
-  const pool=poolForCategoriesAndSubcategories(selectedCategories,selectedSubcategories);
+  const selectedTopics=getSelectedTestTopics();
+  const pool=poolForCategoriesAndSubcategories(selectedCategories,selectedSubcategories,selectedTopics);
   if(!pool.length){
     alert("No questions match the selected categories and subcategories.");
     return;
@@ -3226,7 +3473,7 @@ const CSV_CHOICE_COLUMNS=25;
 const CSV_ANSWER_COLUMNS=10;
 const CSV_CORRECT_COLUMNS=5;
 const csvHeader=[
-  "ID","Category","Subcategory","Question","Type","Difficulty","Correct Answer",
+  "ID","Category","Subcategory","Topic","Question","Type","Difficulty","Source","Correct Answer",
   ...Array.from({length:CSV_CORRECT_COLUMNS-1},(_,i)=>`Correct Answer ${i+2}`),
   ...Array.from({length:CSV_ANSWER_COLUMNS},(_,i)=>`Accepted Answer ${i+1}`),
   ...Array.from({length:CSV_CHOICE_COLUMNS},(_,i)=>`Choice ${i+1}`),
@@ -3243,8 +3490,8 @@ function questionsToCsv(list){
     const answers=q.type==="typed"?(q.answers||[]):[];
     const choices=q.type==="mc"?(q.choices||[]):[];
     const row=[
-      q.id||"",q.category||"",q.subcategory||"",q.question||"",q.type||"typed",
-      q.difficulty||"normal",
+      q.id||"",q.category||"",q.subcategory||"",q.topic||"",q.question||"",q.type||"typed",
+      q.difficulty||"normal",q.source||"custom",
       ...Array.from({length:CSV_CORRECT_COLUMNS},(_,i)=>(q.correctAnswers||[q.correct||answers[0]||""])[i]||""),
       ...Array.from({length:CSV_ANSWER_COLUMNS},(_,i)=>answers[i]||""),
       ...Array.from({length:CSV_CHOICE_COLUMNS},(_,i)=>choices[i]||""),
@@ -3321,8 +3568,8 @@ function csvRowsToQuestions(text){
       if(correct&&!answers.includes(correct))answers.unshift(correct);
       if(!answers.length)throw new Error(`Row ${ri+2} needs at least one accepted answer.`);
       out.push({
-        id,category,subcategory:get(row,"Subcategory"),question,type:"typed",difficulty,
-        answers,image:""
+        id,category,subcategory:get(row,"Subcategory"),topic:get(row,"Topic"),question,type:"typed",difficulty,
+        answers,image:"",source:get(row,"Source")||"custom"
       });
     }else{
       const choices=[];
@@ -3347,8 +3594,8 @@ function csvRowsToQuestions(text){
       const minCorrect=multipleCorrect ? Math.max(1,Math.min(corrects.length,displayCount,parseInt(get(row,"Minimum Correct"),10)||1)) : 1;
       const maxCorrect=multipleCorrect ? Math.max(minCorrect,Math.min(corrects.length,displayCount,parseInt(get(row,"Maximum Correct"),10)||minCorrect)) : 1;
       out.push({
-        id,category,subcategory:get(row,"Subcategory"),question,type:"mc",difficulty,
-        choices,correct:corrects[0],correctAnswers:corrects,poolCount,displayCount,
+        id,category,subcategory:get(row,"Subcategory"),topic:get(row,"Topic"),question,type:"mc",difficulty,
+        choices,correct:corrects[0],source:get(row,"Source")||"custom",correctAnswers:corrects,poolCount,displayCount,
         multipleCorrect,minCorrectAnswers:minCorrect,maxCorrectAnswers:maxCorrect,
         answerPoolId:get(row,"Answer Pool ID")||null,
         allAbove:/^(true|yes|1)$/i.test(get(row,"All of the Above")),
@@ -3368,13 +3615,15 @@ function downloadText(filename,text,type){
 
 
 /* ---------- Google Sheets bridge sync ---------- */
-const APP_VERSION="2026.08.23.4";
-const SYNC_PROTOCOL_ID="KS-SYNC-4";
-const REQUIRED_BRIDGE_COMPAT="KS-SYNC-4";
+const APP_VERSION="2026.08.23.5";
+const SYNC_PROTOCOL_ID="KS-SYNC-5";
+const REQUIRED_BRIDGE_COMPAT="KS-SYNC-5";
 const SHEET_BRIDGE_KEY="knowledge-speedrun-sheet-bridge-url-v1";
 const SYNC_BASELINE_KEY="knowledge-speedrun-sync-baseline-v1";
 const SYNC_DIRTY_KEY="knowledge-speedrun-sync-dirty-v1";
 const SYNC_DELETED_KEY="knowledge-speedrun-sync-deleted-v1";
+const SYNC_STATE_BASELINE_KEY="knowledge-speedrun-sync-state-baseline-v1";
+let syncStateBaseline=localStorage.getItem(SYNC_STATE_BASELINE_KEY)||"";
 
 let syncBaseline=JSON.parse(localStorage.getItem(SYNC_BASELINE_KEY)||"null");
 let syncDirtyIds=new Set(JSON.parse(localStorage.getItem(SYNC_DIRTY_KEY)||"[]"));
@@ -3384,6 +3633,7 @@ function persistSyncTracking(){
   localStorage.setItem(SYNC_BASELINE_KEY,JSON.stringify(syncBaseline));
   localStorage.setItem(SYNC_DIRTY_KEY,JSON.stringify([...syncDirtyIds]));
   localStorage.setItem(SYNC_DELETED_KEY,JSON.stringify([...syncDeletedIds]));
+  localStorage.setItem(SYNC_STATE_BASELINE_KEY,syncStateBaseline);
 }
 
 function currentQuestionVersions(){
@@ -3417,8 +3667,12 @@ function trackQuestionChanges(){
   persistSyncTracking();
 }
 
+function currentNonQuestionSyncFingerprint(){
+  return JSON.stringify({answerPools,testHistory,testSettings,customTests,customCategories});
+}
 function markSyncBaseline(){
   syncBaseline=currentQuestionVersions();
+  syncStateBaseline=currentNonQuestionSyncFingerprint();
   syncDirtyIds.clear();
   syncDeletedIds.clear();
   persistSyncTracking();
@@ -3473,7 +3727,7 @@ function getSyncState(){
     customTests,
     customCategories,
     exportedAt:new Date().toISOString(),
-    schemaVersion:2
+    schemaVersion:3
   };
 }
 function applySyncState(d){
@@ -3565,7 +3819,7 @@ $("sheetForcePush").onclick=async()=>{
 $("sheetPush").onclick=async()=>{
   try{
     const changes=syncChangeCount();
-    const fullPush=!syncBaseline;
+    const fullPush=!syncBaseline || syncStateBaseline!==currentNonQuestionSyncFingerprint();
 
     if(fullPush){
       if(!confirm("This is the first push from this browser, so the complete local question bank will be uploaded to Google Sheets. Continue?"))return;
@@ -3578,7 +3832,7 @@ $("sheetPush").onclick=async()=>{
       return;
     }
 
-    if(!changes){
+    if(!changes && syncStateBaseline===currentNonQuestionSyncFingerprint()){
       sheetStatus("Google Sheet is already up to date.");
       return;
     }
@@ -3792,14 +4046,14 @@ window.addEventListener("beforeinstallprompt", event => {
       button.hidden=true;
     };
   }
-  if(status)status.firstChild.textContent="App v2026.08.23.4 • PWA install available ";
+  if(status)status.firstChild.textContent="App v2026.08.23.5 • PWA install available ";
 });
 
 window.addEventListener("appinstalled",()=>{
   const button=document.getElementById("pwaInstallButton");
   const status=document.getElementById("pwaStatus");
   if(button)button.hidden=true;
-  if(status)status.firstChild.textContent="App v2026.08.23.4 • Installed as an app";
+  if(status)status.firstChild.textContent="App v2026.08.23.5 • Installed as an app";
 });
 
 if ("serviceWorker" in navigator) {
@@ -3808,7 +4062,7 @@ if ("serviceWorker" in navigator) {
       .then(reg => {
         const status=document.getElementById("pwaStatus");
         if(status && !knowledgeSpeedrunInstallPrompt && !window.matchMedia("(display-mode: standalone)").matches){
-          status.firstChild.textContent="App v2026.08.23.4 • PWA service worker active";
+          status.firstChild.textContent="App v2026.08.23.5 • PWA service worker active";
         }
 
         if (reg.waiting) {
@@ -3827,7 +4081,7 @@ if ("serviceWorker" in navigator) {
       })
       .catch(err => {
         const status=document.getElementById("pwaStatus");
-        if(status)status.firstChild.textContent="App v2026.08.23.4 • PWA unavailable in this browser";
+        if(status)status.firstChild.textContent="App v2026.08.23.5 • PWA unavailable in this browser";
         console.warn("Knowledge Speedrun offline cache unavailable:", err);
       });
   });
